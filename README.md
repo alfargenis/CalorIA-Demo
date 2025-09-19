@@ -19,7 +19,7 @@ npm run demo
 
 ## 📱 Screenshots
 
-![CalorIA App Screenshot](./assets/screenshot.png)
+<img src="./assets/screenshot.png" alt="CalorIA App Screenshot" width="300">
 
 ## 🛠️ Technologies
 
