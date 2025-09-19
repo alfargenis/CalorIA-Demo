@@ -5,7 +5,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { 
   FoodEntry, 
   DailyStats, 
@@ -41,9 +40,7 @@ interface FoodState {
   calculateDailyNutrition: () => void;
 }
 
-export const useFoodStore = create<FoodState>()(
-  persist(
-    (set, get) => ({
+export const useFoodStore = create<FoodState>()((set, get) => ({
       // Initial state
       todayStats: null,
       foodEntries: [],
@@ -232,14 +229,4 @@ export const useFoodStore = create<FoodState>()(
 
         set({ todayStats: dailyStats });
       },
-    }),
-    {
-      name: 'caloria-demo-food-store',
-      partialize: (state) => ({
-        foodEntries: state.foodEntries,
-        nutritionGoals: state.nutritionGoals,
-        todayStats: state.todayStats,
-      }),
-    }
-  )
-);
+    }));

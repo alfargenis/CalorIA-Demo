@@ -36,6 +36,21 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated native folders (KEEP /ios - we're using it)
 /android
+
+# Claude Code - Internal documentation (sensitive)
+CLAUDE.md
+PROGRESS.md
+ROADMAP.md
+CONTEXT-PROMPT.md
+NEXT-STEPS.md
+
+# Backup and temporary files
+src_backup/
+*.original.*
+*.minimal.*
+package.original.json
+package.minimal.json
+App.original.tsx
+App.simple.tsx

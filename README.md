@@ -1,6 +1,6 @@
 # 🥗 CalorIA Demo - Smart Calorie Tracker
 
-> **Demo Version** - Portfolio showcase with limited functionality
+> **Demo Version** - Interactive demo with UI showcase
 
 ## ✨ Live Demo Features
 
@@ -19,9 +19,9 @@ npm run demo
 
 ## 📱 Screenshots
 
-[Add screenshots of your app here]
+![CalorIA App Screenshot](./assets/screenshot.png)
 
-## 🛠️ Technologies Demonstrated
+## 🛠️ Technologies
 
 - **React Native** + TypeScript
 - **Expo** development platform
@@ -30,22 +30,12 @@ npm run demo
 - **Custom Design System**
 - **Responsive UI Components**
 
-## 💼 Portfolio Showcase
-
-This demo showcases:
-- Modern mobile app development skills
-- TypeScript and React Native expertise  
-- UI/UX design implementation
-- State management patterns
-- Component architecture
-- Professional code organization
-
 ## 🔗 Links
 
-- **Production App**: [Contact for access]
-- **Portfolio**: [Your portfolio link]
-- **LinkedIn**: [Your LinkedIn]
+- **Contact**: [estefreric@gmail.com](mailto:estefreric@gmail.com)
+- **Portfolio**: [https://alfargenis.github.io/](https://alfargenis.github.io/)
+- **LinkedIn**: [https://www.linkedin.com/in/alfargenis/](https://www.linkedin.com/in/alfargenis/)
 
 ---
 
-*This is a demo version for portfolio purposes. The production version includes full AI integration, real-time data, and premium features.*
+*This is a demo version of the app. The premium version includes all complete functionalities with AI, real-time data, and advanced features.*

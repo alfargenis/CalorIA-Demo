@@ -5,7 +5,6 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { User, UserProfile } from '../types';
 
 interface UserState {
@@ -24,12 +23,15 @@ interface UserState {
   clearError: () => void;
 }
 
-export const useUserStore = create<UserState>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      user: null,
-      isAuthenticated: false,
+export const useUserStore = create<UserState>()((set, get) => ({
+      // Initial state (DEMO MODE - USER LOGGED IN)
+      user: {
+        id: 'demo-user-123',
+        email: 'demo@caloria.com',
+        displayName: 'Usuario Demo',
+        createdAt: new Date(),
+      },
+      isAuthenticated: true,
       isLoading: false,
       error: null,
 
@@ -79,13 +81,4 @@ export const useUserStore = create<UserState>()(
           error: null,
         });
       },
-    }),
-    {
-      name: 'caloria-demo-user-store',
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
-);
+    }));
