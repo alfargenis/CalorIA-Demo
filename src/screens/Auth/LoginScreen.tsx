@@ -15,16 +15,15 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '../../components/UI/Button';
-import { Card } from '../../components/UI/Card';
-import { Heading1, Heading2, BodyText } from '../../components/UI/Typography';
+import { Button, Card, TextInput, Heading1, Heading2, BodyText } from '../../components/UI';
 import { useUserStore } from '../../store/userStore';
+import { AuthService } from '../../services/authService';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setUser, setLoading, isLoading } = useUserStore();
+  const { setUser, setLoading, setError, isLoading } = useUserStore();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,32 +32,65 @@ export const LoginScreen = () => {
     }
 
     setLoading(true);
+    setError(null);
     
     try {
-      // TODO: Implement Firebase authentication
-      // For now, we'll simulate a successful login
-      setTimeout(() => {
-        const mockUser = {
-          id: 'user_1',
-          email,
-          displayName: 'Usuario Demo',
-          createdAt: new Date(),
-        };
-        setUser(mockUser);
-        setLoading(false);
-      }, 1000);
+      const result = await AuthService.signInWithEmail(email, password);
+      
+      if (result.success && result.user) {
+        setUser(result.user);
+        console.log('✅ Login successful for:', result.user.email);
+      } else {
+        Alert.alert('Error de Login', result.error || 'Error al iniciar sesión');
+      }
     } catch (error) {
+      console.error('❌ Login error:', error);
+      Alert.alert('Error', 'Error inesperado al iniciar sesión');
+    } finally {
       setLoading(false);
-      Alert.alert('Error', 'Error al iniciar sesión');
     }
   };
 
   const handleGoogleLogin = async () => {
-    Alert.alert('Próximamente', 'Login con Google estará disponible pronto');
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await AuthService.signInWithGoogle();
+      
+      if (result.success && result.user) {
+        setUser(result.user);
+        console.log('✅ Google login successful for:', result.user.email);
+      } else {
+        Alert.alert('Error de Login', result.error || 'Error al iniciar sesión con Google');
+      }
+    } catch (error) {
+      console.error('❌ Google login error:', error);
+      Alert.alert('Error', 'Error inesperado al iniciar sesión con Google');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAppleLogin = async () => {
-    Alert.alert('Próximamente', 'Login con Apple estará disponible pronto');
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await AuthService.signInWithApple();
+      
+      if (result.success && result.user) {
+        setUser(result.user);
+        console.log('✅ Apple login successful for:', result.user.email);
+      } else {
+        Alert.alert('Error de Login', result.error || 'Error al iniciar sesión con Apple');
+      }
+    } catch (error) {
+      console.error('❌ Apple login error:', error);
+      Alert.alert('Error', 'Error inesperado al iniciar sesión con Apple');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,21 +117,27 @@ export const LoginScreen = () => {
               Iniciar Sesión
             </Heading2>
 
-            {/* Email Input - TODO: Create TextInput component */}
-            <View style={styles.inputContainer}>
-              <BodyText style={styles.inputLabel}>Email</BodyText>
-              <View style={styles.input}>
-                <BodyText>{email || 'demo@caloria.app'}</BodyText>
-              </View>
-            </View>
+            {/* Email Input */}
+            <TextInput
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="demo@caloria.app"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
-            {/* Password Input - TODO: Create TextInput component */}
-            <View style={styles.inputContainer}>
-              <BodyText style={styles.inputLabel}>Contraseña</BodyText>
-              <View style={styles.input}>
-                <BodyText>{password || '••••••••'}</BodyText>
-              </View>
-            </View>
+            {/* Password Input */}
+            <TextInput
+              label="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
             {/* Login Button */}
             <Button
@@ -178,20 +216,6 @@ const styles = StyleSheet.create({
   formTitle: {
     marginBottom: SPACING.lg,
     textAlign: 'center',
-  },
-  inputContainer: {
-    marginBottom: SPACING.md,
-  },
-  inputLabel: {
-    marginBottom: SPACING.xs,
-    fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: SPACING.md,
-    backgroundColor: COLORS.surface,
   },
   loginButton: {
     marginTop: SPACING.md,

@@ -3,7 +3,8 @@
  * Root navigation structure with authentication flow
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -103,11 +104,24 @@ const MainTabNavigator = () => {
 };
 
 export const AppNavigator = () => {
-  const { isAuthenticated, isLoading } = useUserStore();
+  const { isAuthenticated, isLoading, isInitialized, initialize } = useUserStore();
 
-  // You can add a loading screen here while checking auth status
-  if (isLoading) {
-    return null; // TODO: Add loading screen
+  // Initialize the store when app starts
+  useEffect(() => {
+    if (!isInitialized) {
+      initialize();
+    }
+  }, [isInitialized, initialize]);
+
+  // Show loading screen while initializing or loading
+  if (!isInitialized || isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar style="dark" backgroundColor={COLORS.surface} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Iniciando CalorIA...</Text>
+      </View>
+    );
   }
 
   return (
@@ -138,3 +152,18 @@ export const AppNavigator = () => {
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+});
