@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.CalorIA"
+      "bundleIdentifier": "com.anonymous.CalorIA",
+      "infoPlist": {
+        "NSCameraUsageDescription": "CalorIA necesita acceso a la cámara para tomar fotos de alimentos y calcular calorías automáticamente.",
+        "NSPhotoLibraryUsageDescription": "CalorIA necesita acceso a la galería para seleccionar fotos de alimentos existentes."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +32,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-camera",
+      "expo-image-picker"
     ]
   }
 }
