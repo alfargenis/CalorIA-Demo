@@ -15,10 +15,11 @@ import { useUserStore } from '../store/userStore';
 import { COLORS } from '../utils/constants';
 import type { RootStackParamList, MainTabParamList } from '../types';
 
-// Import screens (we'll create these next)
+// Import screens
 import { LoginScreen } from '../screens/Auth/LoginScreen';
+import { OnboardingStackNavigator } from './OnboardingStackNavigator';
 import { HomeScreen } from '../screens/Home/HomeScreen';
-import { CameraScreen } from '../screens/Camera/CameraScreen';
+import { CameraStackNavigator } from './CameraStackNavigator';
 import { HistoryScreen } from '../screens/History/HistoryScreen';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 
@@ -80,9 +81,10 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen 
         name="Camera" 
-        component={CameraScreen}
+        component={CameraStackNavigator}
         options={{
           title: 'Escanear',
+          headerShown: false,
         }}
       />
       <Tab.Screen 
@@ -104,7 +106,7 @@ const MainTabNavigator = () => {
 };
 
 export const AppNavigator = () => {
-  const { isAuthenticated, isLoading, isInitialized, initialize } = useUserStore();
+  const { isAuthenticated, isOnboardingCompleted, isLoading, isInitialized, initialize } = useUserStore();
 
   // Initialize the store when app starts
   useEffect(() => {
@@ -117,7 +119,7 @@ export const AppNavigator = () => {
   if (!isInitialized || isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <StatusBar style="dark" backgroundColor={COLORS.surface} />
+        <StatusBar style="light" />
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text style={styles.loadingText}>Iniciando CalorIA...</Text>
       </View>
@@ -126,27 +128,18 @@ export const AppNavigator = () => {
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={COLORS.surface} />
+      <StatusBar style="light" />
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
           }}
         >
-          {!isAuthenticated ? (
-            <Stack.Screen 
-              name="Auth" 
-              component={LoginScreen}
-              options={{
-                animationTypeForReplace: 'pop',
-              }}
-            />
-          ) : (
-            <Stack.Screen 
-              name="Main" 
-              component={MainTabNavigator}
-            />
-          )}
+          {/* FORCE MAIN APP - SKIP ALL AUTHENTICATION */}
+          <Stack.Screen 
+            name="Main" 
+            component={MainTabNavigator}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </>

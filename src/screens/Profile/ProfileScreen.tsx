@@ -61,7 +61,7 @@ export const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* User Info */}
         <Card style={styles.userCard}>

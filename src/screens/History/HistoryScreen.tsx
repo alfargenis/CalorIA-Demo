@@ -3,12 +3,14 @@
  * Food history and nutrition analytics
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   FlatList,
+  RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,56 +19,186 @@ import { Button } from '../../components/UI/Button';
 import { Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
 import { useFoodStore } from '../../store/foodStore';
 import { COLORS, SPACING } from '../../utils/constants';
-import type { FoodEntry } from '../../types';
+import type { FoodEntry, MealType } from '../../types';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 export const HistoryScreen = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
-  const { foodEntries, getTodayEntries } = useFoodStore();
+  const [selectedMealType, setSelectedMealType] = useState<MealType | 'all'>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const { 
+    foodEntries, 
+    getTodayEntries, 
+    calculateDailyNutrition,
+    isLoading 
+  } = useFoodStore();
 
-  const todayEntries = getTodayEntries();
+  const mealTypes: { value: MealType | 'all'; label: string }[] = [
+    { value: 'all', label: 'Todas' },
+    { value: 'breakfast', label: 'Desayuno' },
+    { value: 'lunch', label: 'Almuerzo' },
+    { value: 'dinner', label: 'Cena' },
+    { value: 'snack', label: 'Snack' },
+  ];
+
+  // Get entries based on view mode and filters
+  const filteredEntries = useMemo(() => {
+    let entries: FoodEntry[] = [];
+    const now = new Date();
+
+    switch (viewMode) {
+      case 'daily':
+        entries = getTodayEntries();
+        break;
+      case 'weekly':
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        
+        entries = foodEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= weekStart;
+        });
+        break;
+      case 'monthly':
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        entries = foodEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= monthStart;
+        });
+        break;
+    }
+
+    // Filter by meal type
+    if (selectedMealType !== 'all') {
+      entries = entries.filter(entry => entry.mealType === selectedMealType);
+    }
+
+    return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [viewMode, selectedMealType, foodEntries, getTodayEntries]);
+
+  // Calculate summary stats for filtered entries
+  const summaryStats = useMemo(() => {
+    const totalCalories = filteredEntries.reduce((sum, entry) => sum + entry.nutrition.calories, 0);
+    const totalProtein = filteredEntries.reduce((sum, entry) => sum + entry.nutrition.protein, 0);
+    const totalCarbs = filteredEntries.reduce((sum, entry) => sum + entry.nutrition.carbs, 0);
+    const totalFat = filteredEntries.reduce((sum, entry) => sum + entry.nutrition.fat, 0);
+
+    return {
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein),
+      carbs: Math.round(totalCarbs),
+      fat: Math.round(totalFat),
+      meals: filteredEntries.length,
+    };
+  }, [filteredEntries]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    calculateDailyNutrition();
+    // Simulate API call delay
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
+  const getMealTypeIcon = (mealType: MealType) => {
+    switch (mealType) {
+      case 'breakfast': return '🌅';
+      case 'lunch': return '☀️';
+      case 'dinner': return '🌙';
+      case 'snack': return '🍪';
+      default: return '🍽️';
+    }
+  };
+
+  const getMealTypeLabel = (mealType: MealType) => {
+    switch (mealType) {
+      case 'breakfast': return 'Desayuno';
+      case 'lunch': return 'Almuerzo';
+      case 'dinner': return 'Cena';
+      case 'snack': return 'Snack';
+      default: return 'Comida';
+    }
+  };
 
   const renderEntry = ({ item }: { item: FoodEntry }) => (
     <Card style={styles.entryCard}>
       <View style={styles.entryHeader}>
         <View style={styles.entryInfo}>
-          <BodyText style={styles.entryName}>
-            {item.food.name}
-          </BodyText>
+          <View style={styles.entryTitleRow}>
+            <BodyText style={styles.entryIcon}>
+              {getMealTypeIcon(item.mealType)}
+            </BodyText>
+            <BodyText style={styles.entryName}>
+              {item.food.name}
+            </BodyText>
+          </View>
           <Caption color="textSecondary">
-            {item.mealType} • {new Date(item.date).toLocaleTimeString('es-ES', {
+            {getMealTypeLabel(item.mealType)} • {new Date(item.date).toLocaleTimeString('es-ES', {
               hour: '2-digit',
               minute: '2-digit',
-            })}
+            })} • {item.portion.amount} {item.portion.unit}
           </Caption>
         </View>
         <View style={styles.entryStats}>
           <BodyText style={styles.entryCalories}>
-            {Math.round(item.nutrition.calories)} cal
+            {Math.round(item.nutrition.calories)}
           </BodyText>
+          <Caption color="textSecondary">cal</Caption>
         </View>
       </View>
       
       <View style={styles.entryMacros}>
         <View style={styles.macroItem}>
-          <Caption color="textSecondary">P</Caption>
-          <Caption>{Math.round(item.nutrition.protein)}g</Caption>
+          <View style={styles.macroHeader}>
+            <Caption color="textSecondary">Proteína</Caption>
+            <BodyText style={styles.macroValue}>
+              {Math.round(item.nutrition.protein)}g
+            </BodyText>
+          </View>
         </View>
         <View style={styles.macroItem}>
-          <Caption color="textSecondary">C</Caption>
-          <Caption>{Math.round(item.nutrition.carbs)}g</Caption>
+          <View style={styles.macroHeader}>
+            <Caption color="textSecondary">Carbos</Caption>
+            <BodyText style={styles.macroValue}>
+              {Math.round(item.nutrition.carbs)}g
+            </BodyText>
+          </View>
         </View>
         <View style={styles.macroItem}>
-          <Caption color="textSecondary">G</Caption>
-          <Caption>{Math.round(item.nutrition.fat)}g</Caption>
+          <View style={styles.macroHeader}>
+            <Caption color="textSecondary">Grasas</Caption>
+            <BodyText style={styles.macroValue}>
+              {Math.round(item.nutrition.fat)}g
+            </BodyText>
+          </View>
         </View>
       </View>
+
+      {item.nutrition.fiber > 0 && (
+        <View style={styles.additionalNutrition}>
+          <Caption color="textSecondary">
+            Fibra: {Math.round(item.nutrition.fiber)}g • 
+            Azúcar: {Math.round(item.nutrition.sugar)}g •
+            Sodio: {Math.round(item.nutrition.sodium)}mg
+          </Caption>
+        </View>
+      )}
+
+      {item.notes && (
+        <View style={styles.notesSection}>
+          <Caption color="textSecondary" style={styles.notes}>
+            💭 {item.notes}
+          </Caption>
+        </View>
+      )}
     </Card>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.content}>
         {/* View Mode Selector */}
         <Card style={styles.selectorCard}>
@@ -95,29 +227,63 @@ export const HistoryScreen = () => {
           </View>
         </Card>
 
+        {/* Meal Type Filter */}
+        <Card style={styles.filterCard}>
+          <Heading3 style={styles.filterTitle}>Filtrar por Comida</Heading3>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.mealFilters}
+          >
+            {mealTypes.map((mealType) => (
+              <TouchableOpacity
+                key={mealType.value}
+                style={[
+                  styles.mealFilterButton,
+                  selectedMealType === mealType.value && styles.mealFilterButtonActive
+                ]}
+                onPress={() => setSelectedMealType(mealType.value)}
+              >
+                <BodyText style={[
+                  styles.mealFilterText,
+                  selectedMealType === mealType.value && styles.mealFilterTextActive
+                ]}>
+                  {mealType.label}
+                </BodyText>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Card>
+
         {/* Summary Stats */}
         <Card style={styles.summaryCard}>
           <Heading3 style={styles.summaryTitle}>
-            Resumen de Hoy
+            Resumen {viewMode === 'daily' ? 'de Hoy' : viewMode === 'weekly' ? 'Semanal' : 'Mensual'}
           </Heading3>
           <View style={styles.summaryStats}>
             <View style={styles.summaryItem}>
               <BodyText style={styles.summaryValue}>
-                {todayEntries.reduce((total, entry) => total + entry.nutrition.calories, 0).toFixed(0)}
+                {summaryStats.calories}
               </BodyText>
               <Caption color="textSecondary">Calorías</Caption>
             </View>
             <View style={styles.summaryItem}>
               <BodyText style={styles.summaryValue}>
-                {todayEntries.length}
+                {summaryStats.meals}
               </BodyText>
               <Caption color="textSecondary">Comidas</Caption>
             </View>
             <View style={styles.summaryItem}>
               <BodyText style={styles.summaryValue}>
-                {todayEntries.reduce((total, entry) => total + entry.nutrition.protein, 0).toFixed(0)}g
+                {summaryStats.protein}g
               </BodyText>
               <Caption color="textSecondary">Proteína</Caption>
+            </View>
+            <View style={styles.summaryItem}>
+              <BodyText style={styles.summaryValue}>
+                {summaryStats.carbs}g
+              </BodyText>
+              <Caption color="textSecondary">Carbos</Caption>
             </View>
           </View>
         </Card>
@@ -127,19 +293,28 @@ export const HistoryScreen = () => {
           <View style={styles.entriesHeader}>
             <Heading3>
               {viewMode === 'daily' ? 'Hoy' : viewMode === 'weekly' ? 'Esta Semana' : 'Este Mes'}
+              {selectedMealType !== 'all' && ` • ${mealTypes.find(m => m.value === selectedMealType)?.label}`}
             </Heading3>
             <Caption color="textSecondary">
-              {todayEntries.length} {todayEntries.length === 1 ? 'entrada' : 'entradas'}
+              {filteredEntries.length} {filteredEntries.length === 1 ? 'entrada' : 'entradas'}
             </Caption>
           </View>
 
-          {todayEntries.length > 0 ? (
+          {filteredEntries.length > 0 ? (
             <FlatList
-              data={todayEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+              data={filteredEntries}
               renderItem={renderEntry}
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.entriesList}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={handleRefresh}
+                  colors={[COLORS.primary]}
+                  tintColor={COLORS.primary}
+                />
+              }
             />
           ) : (
             <Card style={styles.emptyState}>
@@ -178,6 +353,38 @@ const styles = StyleSheet.create({
   },
   selectorButton: {
     flex: 1,
+  },
+  filterCard: {
+    marginBottom: SPACING.md,
+  },
+  filterTitle: {
+    marginBottom: SPACING.md,
+  },
+  mealFilters: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
+  },
+  mealFilterButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  mealFilterButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  mealFilterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  mealFilterTextActive: {
+    color: COLORS.surface,
+    fontWeight: '600',
   },
   summaryCard: {
     marginBottom: SPACING.md,
@@ -222,6 +429,15 @@ const styles = StyleSheet.create({
   entryInfo: {
     flex: 1,
   },
+  entryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  entryIcon: {
+    fontSize: 16,
+    marginRight: SPACING.xs,
+  },
   entryName: {
     fontWeight: '500',
     marginBottom: 2,
@@ -230,19 +446,43 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   entryCalories: {
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.primary,
   },
   entryMacros: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: SPACING.sm,
+    paddingTop: SPACING.md,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
   macroItem: {
+    flex: 1,
     alignItems: 'center',
-    gap: 2,
+  },
+  macroHeader: {
+    alignItems: 'center',
+  },
+  macroValue: {
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: SPACING.xs,
+  },
+  additionalNutrition: {
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  notesSection: {
+    marginTop: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  notes: {
+    fontStyle: 'italic',
   },
   emptyState: {},
   emptyContent: {

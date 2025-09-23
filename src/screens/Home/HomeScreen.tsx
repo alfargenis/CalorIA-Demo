@@ -3,18 +3,20 @@
  * Main dashboard with daily nutrition overview
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
+import { CalorieProgressChart, WeeklyCaloriesChart, MacroDistributionChart } from '../../components/UI/CaloriaChart';
 import { useFoodStore } from '../../store/foodStore';
 import { useUserStore } from '../../store/userStore';
 import { COLORS, SPACING } from '../../utils/constants';
@@ -25,12 +27,94 @@ export const HomeScreen = () => {
     todayStats, 
     calculateDailyNutrition, 
     getTodayEntries,
-    isLoading 
+    isLoading,
+    addFoodEntry 
   } = useFoodStore();
+  
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
 
   useEffect(() => {
     calculateDailyNutrition();
+    // Add some mock data if none exists
+    if (getTodayEntries().length === 0) {
+      addMockData();
+    }
   }, []);
+
+  const addMockData = () => {
+    const mockEntries = [
+      {
+        food: {
+          id: 'mock1',
+          name: 'Desayuno Saludable',
+          brand: 'Casero',
+          barcode: null,
+        },
+        portion: {
+          amount: 1,
+          unit: 'porción',
+          grams: 250,
+        },
+        nutrition: {
+          calories: 420,
+          protein: 25,
+          carbs: 45,
+          fat: 12,
+          fiber: 8,
+          sugar: 5,
+          sodium: 300,
+          cholesterol: 0,
+          saturatedFat: 3,
+          transFat: 0,
+          potassium: 400,
+          calcium: 150,
+          iron: 4,
+          vitaminA: 25,
+          vitaminC: 60,
+        },
+        mealType: 'breakfast' as const,
+        date: new Date(),
+        notes: 'Avena con frutas',
+        source: 'manual' as const,
+      },
+      {
+        food: {
+          id: 'mock2',
+          name: 'Almuerzo Balanceado',
+          brand: 'Casero',
+          barcode: null,
+        },
+        portion: {
+          amount: 1,
+          unit: 'plato',
+          grams: 400,
+        },
+        nutrition: {
+          calories: 650,
+          protein: 35,
+          carbs: 55,
+          fat: 18,
+          fiber: 12,
+          sugar: 8,
+          sodium: 450,
+          cholesterol: 50,
+          saturatedFat: 6,
+          transFat: 0,
+          potassium: 600,
+          calcium: 200,
+          iron: 6,
+          vitaminA: 30,
+          vitaminC: 40,
+        },
+        mealType: 'lunch' as const,
+        date: new Date(),
+        notes: 'Pollo con verduras',
+        source: 'camera' as const,
+      },
+    ];
+
+    mockEntries.forEach(entry => addFoodEntry(entry));
+  };
 
   const handleRefresh = () => {
     calculateDailyNutrition();
@@ -39,6 +123,13 @@ export const HomeScreen = () => {
   const todayEntries = getTodayEntries();
   const hasEntries = todayEntries.length > 0;
 
+  // Mock weekly data for charts
+  const weeklyData = {
+    labels: ['L', 'M', 'X', 'J', 'V', 'S', 'D'],
+    calories: [1800, 2100, 1950, 2200, 1750, 2300, 1900],
+    target: 2000,
+  };
+
   const getNutritionColor = (percentage: number) => {
     if (percentage < 90) return COLORS.error;
     if (percentage > 110) return COLORS.secondary;
@@ -46,7 +137,7 @@ export const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -69,6 +160,40 @@ export const HomeScreen = () => {
           </Caption>
         </View>
 
+        {/* View Mode Toggle */}
+        <Card style={styles.viewModeCard}>
+          <View style={styles.viewModeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.viewModeButton,
+                viewMode === 'daily' && styles.viewModeButtonActive
+              ]}
+              onPress={() => setViewMode('daily')}
+            >
+              <BodyText style={[
+                styles.viewModeText,
+                viewMode === 'daily' && styles.viewModeTextActive
+              ]}>
+                Diario
+              </BodyText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.viewModeButton,
+                viewMode === 'weekly' && styles.viewModeButtonActive
+              ]}
+              onPress={() => setViewMode('weekly')}
+            >
+              <BodyText style={[
+                styles.viewModeText,
+                viewMode === 'weekly' && styles.viewModeTextActive
+              ]}>
+                Semanal
+              </BodyText>
+            </TouchableOpacity>
+          </View>
+        </Card>
+
         {/* Quick Actions */}
         <Card style={styles.quickActions}>
           <Heading3 style={styles.sectionTitle}>
@@ -89,6 +214,29 @@ export const HomeScreen = () => {
             />
           </View>
         </Card>
+
+        {/* Charts Section */}
+        {viewMode === 'daily' && hasEntries && todayStats ? (
+          <>
+            <CalorieProgressChart 
+              data={{
+                calories: todayStats.progress.calories,
+                protein: todayStats.progress.protein,
+                carbs: todayStats.progress.carbs,
+                fat: todayStats.progress.fat,
+              }}
+            />
+            <MacroDistributionChart 
+              data={{
+                protein: todayStats.nutrition.protein,
+                carbs: todayStats.nutrition.carbs,
+                fat: todayStats.nutrition.fat,
+              }}
+            />
+          </>
+        ) : viewMode === 'weekly' ? (
+          <WeeklyCaloriesChart weeklyData={weeklyData} />
+        ) : null}
 
         {/* Daily Progress */}
         {hasEntries && todayStats ? (
@@ -219,6 +367,35 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: SPACING.lg,
+  },
+  viewModeCard: {
+    marginBottom: SPACING.md,
+    padding: SPACING.xs,
+  },
+  viewModeContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: SPACING.xs,
+  },
+  viewModeButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  viewModeButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  viewModeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  viewModeTextActive: {
+    color: COLORS.surface,
+    fontWeight: '600',
   },
   quickActions: {
     marginBottom: SPACING.md,

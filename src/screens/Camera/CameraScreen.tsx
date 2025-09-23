@@ -17,15 +17,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import type { StackNavigationProp } from '@react-navigation/stack';
 
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { Heading2, BodyText } from '../../components/UI/Typography';
 import { COLORS, SPACING } from '../../utils/constants';
 
+type CameraStackParamList = {
+  Camera: undefined;
+  Processing: {
+    imageUri: string;
+  };
+  Confirmation: {
+    imageUri: string;
+    recognitionResult: any;
+  };
+};
+
+type CameraScreenNavigationProp = StackNavigationProp<CameraStackParamList, 'Camera'>;
+
+interface Props {
+  navigation: CameraScreenNavigationProp;
+}
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-export const CameraScreen = () => {
+export const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
@@ -77,14 +95,8 @@ export const CameraScreen = () => {
         setCapturedPhoto(photo.uri);
         setShowCamera(false);
         
-        Alert.alert(
-          'Foto capturada',
-          '¿Quieres procesar esta imagen para identificar alimentos?',
-          [
-            { text: 'Cancelar', style: 'cancel', onPress: () => setCapturedPhoto(null) },
-            { text: 'Procesar', onPress: () => processImage(photo.uri) },
-          ]
-        );
+        // Navigate directly to processing
+        navigation.navigate('Processing', { imageUri: photo.uri });
       } catch (error) {
         console.error('Error taking picture:', error);
         Alert.alert('Error', 'No se pudo tomar la foto');
@@ -105,14 +117,8 @@ export const CameraScreen = () => {
         const imageUri = result.assets[0].uri;
         setCapturedPhoto(imageUri);
         
-        Alert.alert(
-          'Imagen seleccionada',
-          '¿Quieres procesar esta imagen para identificar alimentos?',
-          [
-            { text: 'Cancelar', style: 'cancel', onPress: () => setCapturedPhoto(null) },
-            { text: 'Procesar', onPress: () => processImage(imageUri) },
-          ]
-        );
+        // Navigate directly to processing
+        navigation.navigate('Processing', { imageUri });
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -120,15 +126,7 @@ export const CameraScreen = () => {
     }
   };
 
-  const processImage = async (imageUri: string) => {
-    Alert.alert(
-      'Procesando...',
-      'En la próxima versión, aquí se analizará la imagen con IA para identificar alimentos automáticamente.',
-      [
-        { text: 'OK', onPress: () => setCapturedPhoto(null) }
-      ]
-    );
-  };
+  // Function is no longer needed - navigation handles the flow
 
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));

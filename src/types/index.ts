@@ -11,6 +11,7 @@ export interface User {
   createdAt: Date;
   profile?: UserProfile;
   subscription?: Subscription;
+  onboardingCompleted?: boolean;
 }
 
 export interface UserProfile {

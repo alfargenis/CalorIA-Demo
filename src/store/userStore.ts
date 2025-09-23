@@ -5,7 +5,7 @@
  */
 
 import { create } from 'zustand';
-import { StorageService } from '../services/storageService';
+import { StorageService } from '../services/StorageServiceFallback';
 import type { User, UserProfile } from '../types';
 
 interface UserState {
@@ -14,11 +14,14 @@ interface UserState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
+  isOnboardingCompleted: boolean;
   error: string | null;
 
   // Actions
   setUser: (user: User | null) => void;
+  updateUser: (updates: Partial<User>) => void;
   updateProfile: (profile: Partial<UserProfile>) => void;
+  completeOnboarding: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   logout: () => void;
@@ -33,6 +36,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
       isAuthenticated: false,
       isLoading: false,
       isInitialized: false,
+      isOnboardingCompleted: false,
       error: null,
 
       // Actions
@@ -51,7 +55,20 @@ export const useUserStore = create<UserState>()((set, get) => ({
         }
       },
 
-      updateProfile: (profileUpdates) => {
+      updateUser: async (updates) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        const updatedUser: User = {
+          ...currentUser,
+          ...updates,
+        };
+
+        set({ user: updatedUser });
+        await StorageService.saveUser(updatedUser);
+      },
+
+      updateProfile: async (profileUpdates) => {
         const currentUser = get().user;
         if (!currentUser) return;
 
@@ -63,9 +80,24 @@ export const useUserStore = create<UserState>()((set, get) => ({
           } as UserProfile,
         };
 
-        set({
+        set({ user: updatedUser });
+        await StorageService.saveUser(updatedUser);
+      },
+
+      completeOnboarding: async () => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        const updatedUser: User = {
+          ...currentUser,
+          onboardingCompleted: true,
+        };
+
+        set({ 
           user: updatedUser,
+          isOnboardingCompleted: true,
         });
+        await StorageService.saveUser(updatedUser);
       },
 
       setLoading: (isLoading) => {
@@ -99,6 +131,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
             set({
               user,
               isAuthenticated: true,
+              isOnboardingCompleted: !!user.onboardingCompleted,
               isLoading: false,
               error: null,
             });
@@ -107,6 +140,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
             set({
               user: null,
               isAuthenticated: false,
+              isOnboardingCompleted: false,
               isLoading: false,
               error: null,
             });
