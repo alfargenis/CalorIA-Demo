@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, TextInput, Heading1, Heading2, BodyText } from '../../components/UI';
 import { useUserStore } from '../../store/userStore';
-import { AuthService } from '../../services/authService';
+import { AuthServiceUnified as AuthService } from '../../services/AuthServiceUnified';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export const LoginScreen = () => {

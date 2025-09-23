@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Image,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -29,15 +30,17 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
   const handleGetStarted = () => {
-    console.log('🚀 handleGetStarted called - skipping onboarding!');
-    // Skip onboarding completely and go directly to main app
-    const { completeOnboarding } = require('../../store/userStore').useUserStore.getState();
-    completeOnboarding();
+    console.log('🚀 Welcome Screen - Navigating to Features');
+    navigation.navigate('Features');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Hero Section */}
         <View style={styles.hero}>
           <View style={styles.logoContainer}>
@@ -111,7 +114,7 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
         {/* Action Button */}
         <View style={styles.actions}>
           <Button
-            title="🚀 BOTÓN DE TEST 🚀"
+            title="Comenzar mi viaje"
             onPress={handleGetStarted}
             size="large"
             fullWidth
@@ -122,7 +125,7 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
             30 días gratis. Sin compromisos. Cancela cuando quieras.
           </Caption>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -132,10 +135,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     padding: SPACING.lg,
-    justifyContent: 'space-between',
+    paddingBottom: SPACING.xl, // Extra space at bottom
   },
   hero: {
     alignItems: 'center',

@@ -2,6 +2,13 @@
  * CalorIA - TypeScript Type Definitions
  */
 
+// Auth Types
+export interface AuthResult {
+  success: boolean;
+  user?: User;
+  error?: string;
+}
+
 // User Types
 export interface User {
   id: string;

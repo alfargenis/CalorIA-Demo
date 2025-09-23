@@ -135,11 +135,25 @@ export const AppNavigator = () => {
             headerShown: false,
           }}
         >
-          {/* FORCE MAIN APP - SKIP ALL AUTHENTICATION */}
-          <Stack.Screen 
-            name="Main" 
-            component={MainTabNavigator}
-          />
+          {!isAuthenticated ? (
+            // User not authenticated - show login
+            <Stack.Screen 
+              name="Auth" 
+              component={LoginScreen}
+            />
+          ) : !isOnboardingCompleted ? (
+            // User authenticated but onboarding not completed
+            <Stack.Screen 
+              name="Onboarding" 
+              component={OnboardingStackNavigator}
+            />
+          ) : (
+            // User authenticated and onboarding completed - show main app
+            <Stack.Screen 
+              name="Main" 
+              component={MainTabNavigator}
+            />
+          )}
         </Stack.Navigator>
       </NavigationContainer>
     </>
