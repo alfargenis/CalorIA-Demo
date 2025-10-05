@@ -46,12 +46,20 @@ config/google-services.json
 # generated native folders (KEEP /ios - we're using it)
 /android
 
-# Claude Code - Internal documentation (sensitive)
+# CalorIA - Internal documentation (sensitive - contains API keys and configs)
 CLAUDE.md
 PROGRESS.md
 ROADMAP.md
+ROADMAP-EXTENDED.md
 CONTEXT-PROMPT.md
 NEXT-STEPS.md
+NEXT-SESSION.md
+API-STATUS.md
+API-SETUP-GUIDE.md
+
+# Temporary documentation during development
+*.draft.md
+*.notes.md
 
 # Backup and temporary files
 src_backup/
