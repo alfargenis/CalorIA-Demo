@@ -47,6 +47,7 @@ config/google-services.json
 /android
 
 # CalorIA - Internal documentation (sensitive - contains API keys and configs)
+*.md!README.md
 CLAUDE.md
 PROGRESS.md
 ROADMAP.md
@@ -56,6 +57,8 @@ NEXT-STEPS.md
 NEXT-SESSION.md
 API-STATUS.md
 API-SETUP-GUIDE.md
+TESTING-CLARIFAI.md
+QUICK-START-TESTING.md
 
 # Temporary documentation during development
 *.draft.md
