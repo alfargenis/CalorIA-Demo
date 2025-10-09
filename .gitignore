@@ -47,22 +47,14 @@ config/google-services.json
 /android
 
 # CalorIA - Internal documentation (sensitive - contains API keys and configs)
-*.md!README.md
+# Only README.md is public, all other .md files are private
 CLAUDE.md
-PROGRESS.md
-ROADMAP.md
-ROADMAP-EXTENDED.md
-CONTEXT-PROMPT.md
-NEXT-STEPS.md
-NEXT-SESSION.md
-API-STATUS.md
-API-SETUP-GUIDE.md
-TESTING-CLARIFAI.md
-QUICK-START-TESTING.md
+PROJECT-STATUS.md
 
 # Temporary documentation during development
 *.draft.md
 *.notes.md
+*.backup.md
 
 # Backup and temporary files
 src_backup/

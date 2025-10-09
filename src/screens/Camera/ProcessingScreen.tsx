@@ -130,7 +130,10 @@ export const ProcessingScreen: React.FC<Props> = ({ route, navigation }) => {
       setTimeout(() => {
         navigation.navigate('Confirmation', {
           imageUri,
-          recognitionResult: result,
+          recognitionResult: {
+            ...result,
+            timestamp: result.timestamp.toISOString(), // Serialize Date to string
+          },
         });
       }, 500);
     } catch (error) {
