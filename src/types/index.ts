@@ -19,6 +19,16 @@ export interface User {
   profile?: UserProfile;
   subscription?: Subscription;
   onboardingCompleted?: boolean;
+  stats?: UserStats;
+}
+
+export interface UserStats {
+  currentStreak: number;
+  longestStreak: number;
+  totalDaysTracked: number;
+  totalMealsLogged: number;
+  avgCaloriesPerDay: number;
+  lastActivityDate: Date;
 }
 
 export interface UserProfile {
@@ -26,9 +36,18 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'other';
   height: number; // cm
   weight: number; // kg
+  targetWeight: number; // kg - peso objetivo
+  bmi: number;
+  bmr: number; // Basal Metabolic Rate
+  tdee: number; // Total Daily Energy Expenditure
   activityLevel: keyof typeof import('../utils/constants').ACTIVITY_LEVELS;
+  goalType: 'lose_weight' | 'maintain_weight' | 'gain_weight' | 'gain_muscle' | 'improve_health';
+  weeklyGoal: number; // kg per week (0.25, 0.5, 0.75)
+  targetDate: Date; // fecha objetivo proyectada
   goals: NutritionGoals;
   preferences: UserPreferences;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UserPreferences {
@@ -106,6 +125,7 @@ export interface NutritionGoals {
   fat: number;
   fiber: number;
   sugar: number;
+  sodium: number; // mg
 }
 
 export interface FoodEntry {

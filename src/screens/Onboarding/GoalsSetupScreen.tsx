@@ -136,55 +136,80 @@ export const GoalsSetupScreen: React.FC<Props> = ({ route, navigation }) => {
     return bmr * activityMultipliers[userProfile.activityLevel];
   };
 
-  // Calculate nutrition goals based on selections
+  const calculateWeeklyGoal = () => {
+    const selectedRateOption = WEIGHT_RATE_OPTIONS.find(r => r.id === selectedRate)!;
+    const rateMap = { slow: 0.25, moderate: 0.5, fast: 0.75 };
+    return rateMap[selectedRate];
+  };
+
+  const calculateTargetDate = () => {
+    const { weight, targetWeight } = userProfile;
+    const weightDifference = Math.abs(targetWeight - weight);
+    const weeklyGoal = calculateWeeklyGoal();
+    const weeksNeeded = Math.ceil(weightDifference / weeklyGoal);
+
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + (weeksNeeded * 7));
+    return targetDate;
+  };
+
   const nutritionGoals = useMemo((): NutritionGoals => {
     const tdee = calculateTDEE();
     const selectedGoalOption = GOAL_OPTIONS.find(g => g.id === selectedGoal)!;
     const selectedRateOption = WEIGHT_RATE_OPTIONS.find(r => r.id === selectedRate)!;
-    
+
     let targetCalories = tdee * selectedGoalOption.calorieModifier;
-    
-    // Apply weight change rate adjustment
+
     if (selectedGoal === 'lose_weight') {
       targetCalories -= selectedRateOption.calorieAdjustment;
     } else if (selectedGoal === 'gain_weight' || selectedGoal === 'gain_muscle') {
       targetCalories += selectedRateOption.calorieAdjustment;
     }
-    
-    // Ensure minimum calories for safety
+
     targetCalories = Math.max(targetCalories, 1200);
-    
-    // Calculate macros based on goal
-    let proteinPercentage = 0.25; // Default 25%
-    let carbPercentage = 0.45;    // Default 45%
-    let fatPercentage = 0.30;     // Default 30%
-    
+
+    let proteinPercentage = 0.25;
+    let carbPercentage = 0.45;
+    let fatPercentage = 0.30;
+
     if (selectedGoal === 'gain_muscle') {
-      proteinPercentage = 0.30; // Higher protein for muscle building
+      proteinPercentage = 0.30;
       carbPercentage = 0.40;
       fatPercentage = 0.30;
     } else if (selectedGoal === 'lose_weight') {
-      proteinPercentage = 0.30; // Higher protein to preserve muscle
+      proteinPercentage = 0.30;
       carbPercentage = 0.35;
       fatPercentage = 0.35;
     }
-    
+
     const proteinCalories = targetCalories * proteinPercentage;
     const carbCalories = targetCalories * carbPercentage;
     const fatCalories = targetCalories * fatPercentage;
-    
+
     return {
       calories: Math.round(targetCalories),
-      protein: Math.round(proteinCalories / 4), // 4 calories per gram
-      carbs: Math.round(carbCalories / 4),      // 4 calories per gram
-      fat: Math.round(fatCalories / 9),         // 9 calories per gram
-      fiber: Math.round(targetCalories / 1000 * 14), // 14g per 1000 calories (recommended)
+      protein: Math.round(proteinCalories / 4),
+      carbs: Math.round(carbCalories / 4),
+      fat: Math.round(fatCalories / 9),
+      fiber: Math.round(targetCalories / 1000 * 14),
+      sugar: Math.round(targetCalories / 1000 * 25),
+      sodium: 2300,
     };
   }, [selectedGoal, selectedRate, userProfile]);
 
   const handleComplete = () => {
+    const enhancedProfile = {
+      ...userProfile,
+      goalType: selectedGoal,
+      weeklyGoal: calculateWeeklyGoal(),
+      targetDate: calculateTargetDate(),
+      bmi: parseFloat(((userProfile.weight / Math.pow(userProfile.height / 100, 2))).toFixed(1)),
+      bmr: calculateBMR(),
+      tdee: calculateTDEE(),
+    };
+
     navigation.navigate('Completion', {
-      userProfile,
+      userProfile: enhancedProfile,
       nutritionGoals,
     });
   };

@@ -86,18 +86,33 @@ export const useUserStore = create<UserState>()((set, get) => ({
 
       completeOnboarding: async () => {
         const currentUser = get().user;
-        if (!currentUser) return;
+        if (!currentUser) {
+          console.error('❌ completeOnboarding: No user found!');
+          return;
+        }
+
+        console.log('📝 completeOnboarding: Before update -', {
+          onboardingCompleted: currentUser.onboardingCompleted,
+          isOnboardingCompleted: get().isOnboardingCompleted,
+        });
 
         const updatedUser: User = {
           ...currentUser,
           onboardingCompleted: true,
         };
 
-        set({ 
+        set({
           user: updatedUser,
           isOnboardingCompleted: true,
         });
+
+        console.log('✅ completeOnboarding: After set() -', {
+          onboardingCompleted: updatedUser.onboardingCompleted,
+          isOnboardingCompleted: get().isOnboardingCompleted,
+        });
+
         await StorageService.saveUser(updatedUser);
+        console.log('💾 completeOnboarding: User saved to storage');
       },
 
       setLoading: (isLoading) => {

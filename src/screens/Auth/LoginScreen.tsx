@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +24,8 @@ import { COLORS, SPACING } from '../../utils/constants';
 export const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const { setUser, setLoading, setError, isLoading } = useUserStore();
 
   const handleLogin = async () => {
@@ -33,10 +36,10 @@ export const LoginScreen = () => {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await AuthService.signInWithEmail(email, password);
-      
+
       if (result.success && result.user) {
         setUser(result.user);
         console.log('✅ Login successful for:', result.user.email);
@@ -46,6 +49,42 @@ export const LoginScreen = () => {
     } catch (error) {
       console.error('❌ Login error:', error);
       Alert.alert('Error', 'Error inesperado al iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Por favor completa todos los campos');
+      return;
+    }
+
+    if (!displayName.trim()) {
+      Alert.alert('Error', 'Por favor ingresa tu nombre');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await AuthService.signUpWithEmail(email, password, displayName.trim());
+
+      if (result.success && result.user) {
+        setUser(result.user);
+        console.log('✅ Registration successful for:', result.user.email);
+      } else {
+        Alert.alert('Error de Registro', result.error || 'Error al registrarse');
+      }
+    } catch (error) {
+      console.error('❌ Registration error:', error);
+      Alert.alert('Error', 'Error inesperado al registrarse');
     } finally {
       setLoading(false);
     }
@@ -111,18 +150,30 @@ export const LoginScreen = () => {
             </BodyText>
           </View>
 
-          {/* Login Form */}
+          {/* Login/Register Form */}
           <Card style={styles.formCard}>
             <Heading2 style={styles.formTitle}>
-              Iniciar Sesión
+              {isRegisterMode ? 'Crear Cuenta' : 'Iniciar Sesión'}
             </Heading2>
+
+            {/* Display Name Input (Register only) */}
+            {isRegisterMode && (
+              <TextInput
+                label="Nombre"
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Tu nombre"
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+            )}
 
             {/* Email Input */}
             <TextInput
               label="Email"
               value={email}
               onChangeText={setEmail}
-              placeholder="demo@caloria.app"
+              placeholder={isRegisterMode ? "tu-email@ejemplo.com" : "demo@caloria.app"}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -139,10 +190,10 @@ export const LoginScreen = () => {
               autoCorrect={false}
             />
 
-            {/* Login Button */}
+            {/* Login/Register Button */}
             <Button
-              title="Iniciar Sesión"
-              onPress={handleLogin}
+              title={isRegisterMode ? 'Crear Cuenta' : 'Iniciar Sesión'}
+              onPress={isRegisterMode ? handleRegister : handleLogin}
               loading={isLoading}
               fullWidth
               style={styles.loginButton}
@@ -178,11 +229,18 @@ export const LoginScreen = () => {
           {/* Footer */}
           <View style={styles.footer}>
             <BodyText align="center" color="textSecondary">
-              ¿No tienes cuenta?{' '}
+              {isRegisterMode ? '¿Ya tienes cuenta? ' : '¿No tienes cuenta? '}
             </BodyText>
-            <BodyText align="center" color="primary">
-              Regístrate gratis
-            </BodyText>
+            <TouchableOpacity onPress={() => {
+              setIsRegisterMode(!isRegisterMode);
+              setEmail('');
+              setPassword('');
+              setDisplayName('');
+            }}>
+              <BodyText align="center" color="primary">
+                {isRegisterMode ? 'Inicia sesión' : 'Regístrate gratis'}
+              </BodyText>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

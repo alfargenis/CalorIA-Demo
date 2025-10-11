@@ -11,6 +11,8 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -20,6 +22,7 @@ import { Button } from '../../components/UI/Button';
 import { Heading1, Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
 import { useUserStore } from '../../store/userStore';
 import { useFoodStore } from '../../store/foodStore';
+import { firebaseService } from '../../services/FirebaseService';
 import { COLORS, SPACING } from '../../utils/constants';
 import type { OnboardingStackParamList } from '../../navigation/OnboardingStackNavigator';
 
@@ -35,8 +38,8 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
   const { userProfile, nutritionGoals } = route.params;
   const { completeOnboarding, updateProfile } = useUserStore();
   const { updateNutritionGoals } = useFoodStore();
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  // Animations
   const scaleAnim = new Animated.Value(0);
   const fadeAnim = new Animated.Value(0);
 
@@ -64,15 +67,98 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleGetStarted = async () => {
     console.log('🚀 handleGetStarted called!');
+    setIsLoading(true);
+
     try {
-      console.log('📝 Saving user profile...');
-      // Save user profile and goals
+      const user = useUserStore.getState().user;
+      if (!user) {
+        console.error('❌ No user found in store');
+        Alert.alert('Error', 'No se encontró el usuario. Por favor inicia sesión nuevamente.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('👤 User found:', user.email, 'ID:', user.id);
+      console.log('📊 Current onboardingCompleted:', user.onboardingCompleted);
+
+      console.log('📝 Attempting to save to Firestore (with 5s timeout)...');
+
+      const firestorePromise = (async () => {
+        try {
+          const profileSaved = await firebaseService.saveUserProfile(user.id, {
+            age: userProfile.age,
+            weight: userProfile.weight,
+            height: userProfile.height,
+            targetWeight: userProfile.targetWeight,
+            bmi: userProfile.bmi,
+            bmr: userProfile.bmr,
+            tdee: userProfile.tdee,
+            gender: userProfile.gender,
+            activityLevel: userProfile.activityLevel,
+            goalType: userProfile.goalType,
+            weeklyGoal: userProfile.weeklyGoal,
+            targetDate: userProfile.targetDate,
+            goals: nutritionGoals,
+            preferences: {
+              units: 'metric',
+              language: 'es',
+              notifications: {
+                mealReminders: true,
+                waterReminders: true,
+                goalAchievements: true,
+                weeklyReports: true,
+              },
+              privacy: {
+                shareData: false,
+                analytics: true,
+              },
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          const statsSaved = await firebaseService.saveUserStats(user.id, {
+            currentStreak: 0,
+            longestStreak: 0,
+            totalDaysTracked: 0,
+            totalMealsLogged: 0,
+            avgCaloriesPerDay: 0,
+            lastActivityDate: new Date(),
+          });
+
+          return { profileSaved, statsSaved };
+        } catch (error) {
+          console.error('⚠️  Firestore save failed:', error);
+          return null;
+        }
+      })();
+
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve(null), 5000)
+      );
+
+      const result = await Promise.race([firestorePromise, timeoutPromise]);
+
+      if (result) {
+        console.log('✅ Firestore sync successful:', result);
+      } else {
+        console.warn('⚠️  Firestore sync skipped (timeout or error). Continuing with local storage only.');
+      }
+
+      console.log('💾 Updating local store (CRITICAL - must succeed)...');
       await updateProfile({
         age: userProfile.age,
         weight: userProfile.weight,
         height: userProfile.height,
+        targetWeight: userProfile.targetWeight,
+        bmi: userProfile.bmi,
+        bmr: userProfile.bmr,
+        tdee: userProfile.tdee,
         gender: userProfile.gender,
         activityLevel: userProfile.activityLevel,
+        goalType: userProfile.goalType,
+        weeklyGoal: userProfile.weeklyGoal,
+        targetDate: userProfile.targetDate,
         goals: nutritionGoals,
         preferences: {
           units: 'metric',
@@ -88,17 +174,32 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
             analytics: true,
           },
         },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
+      console.log('✅ Local profile updated');
 
       console.log('🎯 Updating nutrition goals...');
       updateNutritionGoals(nutritionGoals);
-      
-      console.log('✅ Completing onboarding...');
-      // Mark onboarding as complete
+      console.log('✅ Nutrition goals updated');
+
+      console.log('✅ Completing onboarding (CRITICAL)...');
       await completeOnboarding();
+
+      const updatedUser = useUserStore.getState().user;
+      console.log('🔍 After completeOnboarding - user:', updatedUser?.email);
+      console.log('🔍 After completeOnboarding - onboardingCompleted:', updatedUser?.onboardingCompleted);
+      console.log('🔍 After completeOnboarding - isOnboardingCompleted from store:', useUserStore.getState().isOnboardingCompleted);
+
       console.log('🎉 Onboarding completed successfully!');
+      console.log('🔄 Navigation should auto-trigger to dashboard');
+
+      setIsLoading(false);
+
     } catch (error) {
-      console.error('❌ Error completing onboarding:', error);
+      console.error('❌ CRITICAL ERROR completing onboarding:', error);
+      Alert.alert('Error', 'Hubo un problema al completar el onboarding. Por favor intenta nuevamente.');
+      setIsLoading(false);
     }
   };
 
@@ -136,21 +237,26 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
 
       <TouchableOpacity
         onPress={handleGetStarted}
+        disabled={isLoading}
         style={{
-          backgroundColor: '#00C896',
+          backgroundColor: isLoading ? '#A0A0A0' : '#00C896',
           paddingHorizontal: 40,
           paddingVertical: 15,
           borderRadius: 8,
           width: '100%',
           alignItems: 'center',
+          flexDirection: 'row',
+          justifyContent: 'center',
+          gap: 10,
         }}
       >
+        {isLoading && <ActivityIndicator color="white" />}
         <Text style={{
           color: 'white',
           fontSize: 18,
           fontWeight: 'bold',
         }}>
-          ¡Comenzar mi viaje saludable!
+          {isLoading ? 'Guardando...' : '¡Comenzar mi viaje saludable!'}
         </Text>
       </TouchableOpacity>
       

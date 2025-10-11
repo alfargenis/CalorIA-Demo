@@ -34,6 +34,7 @@ interface UserProfile {
   age: number;
   weight: number;
   height: number;
+  targetWeight: number;
   gender: Gender;
   activityLevel: ActivityLevel;
 }
@@ -77,6 +78,7 @@ export const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
     age: 0,
     weight: 0,
     height: 0,
+    targetWeight: 0,
     gender: 'male',
     activityLevel: 'moderate',
   });
@@ -84,12 +86,13 @@ export const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
   const [ageText, setAgeText] = useState('');
   const [weightText, setWeightText] = useState('');
   const [heightText, setHeightText] = useState('');
+  const [targetWeightText, setTargetWeightText] = useState('');
 
   const handleNext = () => {
-    // Validation
     const age = parseInt(ageText);
     const weight = parseFloat(weightText);
     const height = parseInt(heightText);
+    const targetWeight = parseFloat(targetWeightText);
 
     if (!age || age < 13 || age > 120) {
       Alert.alert('Edad inválida', 'Por favor ingresa una edad entre 13 y 120 años');
@@ -106,10 +109,16 @@ export const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
+    if (!targetWeight || targetWeight < 30 || targetWeight > 300) {
+      Alert.alert('Peso objetivo inválido', 'Por favor ingresa un peso objetivo entre 30 y 300 kg');
+      return;
+    }
+
     const userProfile: UserProfile = {
       age,
       weight,
       height,
+      targetWeight,
       gender: profile.gender,
       activityLevel: profile.activityLevel,
     };
@@ -180,17 +189,31 @@ export const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Caption color="textSecondary">Altura</Caption>
-            <TextInput
-              value={heightText}
-              onChangeText={setHeightText}
-              placeholder="170"
-              keyboardType="numeric"
-              maxLength={3}
-              style={styles.input}
-            />
-            <Caption color="textSecondary" style={styles.inputHint}>cm</Caption>
+          <View style={styles.inputRow}>
+            <View style={styles.inputHalf}>
+              <Caption color="textSecondary">Altura</Caption>
+              <TextInput
+                value={heightText}
+                onChangeText={setHeightText}
+                placeholder="170"
+                keyboardType="numeric"
+                maxLength={3}
+                style={styles.input}
+              />
+              <Caption color="textSecondary" style={styles.inputHint}>cm</Caption>
+            </View>
+
+            <View style={styles.inputHalf}>
+              <Caption color="textSecondary">Peso Objetivo</Caption>
+              <TextInput
+                value={targetWeightText}
+                onChangeText={setTargetWeightText}
+                placeholder="65"
+                keyboardType="decimal-pad"
+                style={styles.input}
+              />
+              <Caption color="textSecondary" style={styles.inputHint}>kg</Caption>
+            </View>
           </View>
 
           {/* BMI Display */}
@@ -292,7 +315,7 @@ export const ProfileSetupScreen: React.FC<Props> = ({ navigation }) => {
           onPress={handleNext}
           size="large"
           fullWidth
-          disabled={!ageText || !weightText || !heightText}
+          disabled={!ageText || !weightText || !heightText || !targetWeightText}
           style={styles.continueButton}
         />
       </ScrollView>

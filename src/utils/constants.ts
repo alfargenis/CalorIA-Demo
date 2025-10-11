@@ -84,6 +84,7 @@ export const DEFAULT_NUTRITION_GOALS = {
   fat: 67,       // grams
   fiber: 25,     // grams
   sugar: 50,     // grams
+  sodium: 2300,  // mg (recommended daily limit)
 } as const;
 
 // User Activity Levels

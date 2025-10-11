@@ -17,6 +17,9 @@ import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
 import { useUserStore } from '../../store/userStore';
+import { firebaseService } from '../../services/FirebaseService';
+import { StorageService } from '../../services/StorageServiceFallback';
+import { IS_DEVELOPMENT } from '../../../config/environment';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export const ProfileScreen = () => {
@@ -55,6 +58,70 @@ export const ProfileScreen = () => {
           text: 'Cerrar Sesión',
           style: 'destructive',
           onPress: logout,
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      '🗑️ Eliminar Cuenta (DEV)',
+      '⚠️ ESTO ELIMINARÁ:\n\n• Usuario de Firebase Auth\n• Datos en Firestore (si conecta)\n• Datos locales\n\nÚsalo solo para testing.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar Todo',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!user) return;
+
+              console.log('🗑️ Starting account deletion...');
+
+              console.log('🗑️ Attempting to delete Firestore data (5s timeout)...');
+              const deleteDataPromise = firebaseService.deleteUserData(user.id);
+              const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(false), 5000));
+
+              const dataDeleted = await Promise.race([deleteDataPromise, timeoutPromise]);
+              if (dataDeleted) {
+                console.log('✅ Firestore data deleted');
+              } else {
+                console.warn('⚠️  Firestore data deletion skipped (timeout)');
+              }
+
+              console.log('🗑️ Attempting to delete Firebase Auth user (5s timeout)...');
+              const deleteAuthPromise = firebaseService.deleteCurrentUser();
+              const authTimeoutPromise = new Promise((resolve) => setTimeout(() => resolve(false), 5000));
+
+              const authDeleted = await Promise.race([deleteAuthPromise, authTimeoutPromise]);
+              if (authDeleted) {
+                console.log('✅ Firebase Auth user deleted');
+              } else {
+                console.warn('⚠️  Firebase Auth deletion skipped (timeout or already logged out)');
+              }
+
+              console.log('🗑️ Clearing local storage...');
+              await StorageService.removeUser();
+              console.log('✅ Local storage cleared');
+
+              console.log('✅ Account cleanup completed');
+              Alert.alert(
+                'Cuenta Eliminada',
+                dataDeleted && authDeleted
+                  ? 'Cuenta eliminada completamente de Firebase y local'
+                  : 'Datos locales eliminados. Firebase puede requerir limpieza manual en la consola.'
+              );
+
+              logout();
+            } catch (error) {
+              console.error('❌ Error deleting account:', error);
+              Alert.alert('Error', 'Hubo un problema eliminando la cuenta. Limpieza parcial realizada.');
+              logout();
+            }
+          },
         },
       ]
     );
@@ -159,6 +226,23 @@ export const ProfileScreen = () => {
           </View>
         </Card>
 
+        {/* Development Tools */}
+        {IS_DEVELOPMENT && (
+          <Card style={styles.devCard}>
+            <Heading3 style={styles.devTitle}>🛠️ Dev Tools</Heading3>
+            <BodyText color="textSecondary" style={styles.devWarning}>
+              Estas opciones solo están disponibles en desarrollo
+            </BodyText>
+            <Button
+              title="🗑️ Eliminar Cuenta de Firebase"
+              onPress={handleDeleteAccount}
+              variant="outline"
+              style={[styles.devButton, { borderColor: COLORS.error }] as any}
+              textStyle={{ color: COLORS.error }}
+            />
+          </Card>
+        )}
+
         {/* Logout */}
         <Button
           title="Cerrar Sesión"
@@ -260,6 +344,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  devCard: {
+    marginBottom: SPACING.md,
+    backgroundColor: '#FFF5F5',
+    borderColor: COLORS.error,
+    borderWidth: 1,
+  },
+  devTitle: {
+    marginBottom: SPACING.sm,
+  },
+  devWarning: {
+    marginBottom: SPACING.md,
+    fontSize: 12,
+  },
+  devButton: {
+    marginTop: SPACING.sm,
   },
   logoutButton: {
     marginBottom: SPACING.xl,

@@ -108,7 +108,15 @@ const MainTabNavigator = () => {
 export const AppNavigator = () => {
   const { isAuthenticated, isOnboardingCompleted, isLoading, isInitialized, initialize } = useUserStore();
 
-  // Initialize the store when app starts
+  useEffect(() => {
+    console.log('🔄 AppNavigator state changed:', {
+      isAuthenticated,
+      isOnboardingCompleted,
+      isLoading,
+      isInitialized,
+    });
+  }, [isAuthenticated, isOnboardingCompleted, isLoading, isInitialized]);
+
   useEffect(() => {
     if (!isInitialized) {
       initialize();

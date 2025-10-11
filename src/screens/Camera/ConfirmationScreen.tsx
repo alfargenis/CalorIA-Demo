@@ -22,6 +22,8 @@ import { TextInput } from '../../components/UI/TextInput';
 import { Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
 import { CameraService } from '../../services/CameraService';
 import { useFoodStore } from '../../store/foodStore';
+import { useUserStore } from '../../store/userStore';
+import { firebaseService } from '../../services/FirebaseService';
 import { COLORS, SPACING } from '../../utils/constants';
 import type { FoodRecognitionResult, MealType, FoodEntry } from '../../types';
 
@@ -54,6 +56,7 @@ const MEAL_TYPES: { value: MealType; label: string; emoji: string }[] = [
 export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
   const { imageUri, recognitionResult } = route.params;
   const { addFoodEntry } = useFoodStore();
+  const { user } = useUserStore();
   
   const [selectedFood, setSelectedFood] = useState(recognitionResult.detectedFood);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
@@ -94,12 +97,20 @@ export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
   const currentNutrition = calculateNutrition();
 
   const handleSaveFood = async () => {
+    if (!user) {
+      Alert.alert('Error', 'Debes iniciar sesión para guardar alimentos');
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
       const foodEntry: Omit<FoodEntry, 'id'> = {
+        userId: user.id,
+        foodId: selectedFood.id,
         food: selectedFood,
-        portion: {
+        quantity: parseFloat(portionAmount) || 1,
+        servingSize: {
           amount: parseFloat(portionAmount) || 1,
           unit: portionUnit,
           grams: portionGrams * (parseFloat(portionAmount) || 1),
@@ -107,11 +118,33 @@ export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
         nutrition: currentNutrition,
         mealType: selectedMealType,
         date: new Date(),
+        imageUrl: imageUri,
         notes: notes.trim() || undefined,
-        source: 'camera',
       };
 
-      addFoodEntry(foodEntry);
+      const entryId = await firebaseService.saveFoodEntry(foodEntry);
+
+      if (entryId) {
+        addFoodEntry(foodEntry);
+
+        await firebaseService.updateStreak(user.id);
+
+        const stats = user.stats || {
+          currentStreak: 0,
+          longestStreak: 0,
+          totalDaysTracked: 0,
+          totalMealsLogged: 0,
+          avgCaloriesPerDay: 0,
+          lastActivityDate: new Date(),
+        };
+
+        await firebaseService.saveUserStats(user.id, {
+          ...stats,
+          totalMealsLogged: stats.totalMealsLogged + 1,
+        });
+
+        console.log('✅ Food entry saved successfully to Firestore');
+      }
 
       Alert.alert(
         '¡Éxito! 🎉',
@@ -124,7 +157,6 @@ export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
                 index: 0,
                 routes: [{ name: 'Camera' }],
               });
-              // Navigate to History tab would need TabNavigator reference
             },
           },
           {

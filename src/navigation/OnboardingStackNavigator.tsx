@@ -22,6 +22,7 @@ export type OnboardingStackParamList = {
       age: number;
       weight: number;
       height: number;
+      targetWeight: number;
       gender: 'male' | 'female' | 'other';
       activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
     };
