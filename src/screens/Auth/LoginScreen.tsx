@@ -217,13 +217,14 @@ export const LoginScreen = () => {
               style={styles.socialButton}
             />
 
-            <Button
+            {/* Apple Sign In temporarily disabled - uses demo auth which doesn't work with Firestore */}
+            {/* <Button
               title="Continuar con Apple"
               onPress={handleAppleLogin}
               variant="outline"
               fullWidth
               style={styles.socialButton}
-            />
+            /> */}
           </Card>
 
           {/* Footer */}

@@ -60,14 +60,14 @@ export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
   
   const [selectedFood, setSelectedFood] = useState(recognitionResult.detectedFood);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
-  const [portionAmount, setPortionAmount] = useState(recognitionResult.suggestedPortion.amount.toString());
-  const [portionUnit, setPortionUnit] = useState(recognitionResult.suggestedPortion.unit);
+  const [portionAmount, setPortionAmount] = useState(recognitionResult.suggestedPortion?.amount?.toString() || '1');
+  const [portionUnit, setPortionUnit] = useState(recognitionResult.suggestedPortion?.unit || 'porción');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Get food details from service
   const foodDetails = CameraService.getFoodById(selectedFood.id);
-  const portionGrams = recognitionResult.suggestedPortion.grams;
+  const portionGrams = recognitionResult.suggestedPortion?.grams || 100;
 
   // Calculate nutrition based on portion
   const calculateNutrition = () => {
@@ -119,7 +119,7 @@ export const ConfirmationScreen: React.FC<Props> = ({ route, navigation }) => {
         mealType: selectedMealType,
         date: new Date(),
         imageUrl: imageUri,
-        notes: notes.trim() || undefined,
+        ...(notes.trim() && { notes: notes.trim() }),
       };
 
       const entryId = await firebaseService.saveFoodEntry(foodEntry);
