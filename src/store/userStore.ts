@@ -6,6 +6,8 @@
 
 import { create } from 'zustand';
 import { StorageService } from '../services/StorageServiceFallback';
+import { firebaseService } from '../services/FirebaseService';
+import { useFoodStore } from './foodStore';
 import type { User, UserProfile } from '../types';
 
 interface UserState {
@@ -91,11 +93,6 @@ export const useUserStore = create<UserState>()((set, get) => ({
           return;
         }
 
-        console.log('📝 completeOnboarding: Before update -', {
-          onboardingCompleted: currentUser.onboardingCompleted,
-          isOnboardingCompleted: get().isOnboardingCompleted,
-        });
-
         const updatedUser: User = {
           ...currentUser,
           onboardingCompleted: true,
@@ -106,13 +103,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
           isOnboardingCompleted: true,
         });
 
-        console.log('✅ completeOnboarding: After set() -', {
-          onboardingCompleted: updatedUser.onboardingCompleted,
-          isOnboardingCompleted: get().isOnboardingCompleted,
-        });
-
         await StorageService.saveUser(updatedUser);
-        console.log('💾 completeOnboarding: User saved to storage');
       },
 
       setLoading: (isLoading) => {
@@ -141,8 +132,36 @@ export const useUserStore = create<UserState>()((set, get) => ({
         try {
           set({ isLoading: true });
           const user = await StorageService.loadUser();
-          
+
           if (user) {
+            try {
+              const firestoreData = await firebaseService.getUserData(user.id);
+
+              if (firestoreData.profile || firestoreData.onboardingCompleted) {
+                const syncedUser: User = {
+                  ...user,
+                  onboardingCompleted: firestoreData.onboardingCompleted,
+                  profile: firestoreData.profile || user.profile,
+                  stats: firestoreData.stats || user.stats,
+                };
+
+                await StorageService.saveUser(syncedUser);
+
+                set({
+                  user: syncedUser,
+                  isAuthenticated: true,
+                  isOnboardingCompleted: firestoreData.onboardingCompleted,
+                  isLoading: false,
+                  error: null,
+                });
+
+                useFoodStore.getState().loadFoodEntries(syncedUser.id);
+                return;
+              }
+            } catch (firestoreError) {
+              console.warn('⚠️  Firestore sync failed, using local data');
+            }
+
             set({
               user,
               isAuthenticated: true,
@@ -150,7 +169,8 @@ export const useUserStore = create<UserState>()((set, get) => ({
               isLoading: false,
               error: null,
             });
-            console.log('📱 User loaded from storage:', user.email);
+
+            useFoodStore.getState().loadFoodEntries(user.id);
           } else {
             set({
               user: null,
@@ -159,7 +179,6 @@ export const useUserStore = create<UserState>()((set, get) => ({
               isLoading: false,
               error: null,
             });
-            console.log('📱 No user found in storage');
           }
         } catch (error) {
           console.error('❌ Error loading user from storage:', error);
@@ -176,7 +195,6 @@ export const useUserStore = create<UserState>()((set, get) => ({
         try {
           await get().loadUserFromStorage();
           set({ isInitialized: true });
-          console.log('🚀 User store initialized');
         } catch (error) {
           console.error('❌ Error initializing user store:', error);
           set({ isInitialized: true, error: 'Error inicializando la aplicación' });

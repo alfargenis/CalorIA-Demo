@@ -78,11 +78,6 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
 
-      console.log('👤 User found:', user.email, 'ID:', user.id);
-      console.log('📊 Current onboardingCompleted:', user.onboardingCompleted);
-
-      console.log('📝 Attempting to save to Firestore (with 5s timeout)...');
-
       const firestorePromise = (async () => {
         try {
           const profileSaved = await firebaseService.saveUserProfile(user.id, {
@@ -115,7 +110,7 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
             },
             createdAt: new Date(),
             updatedAt: new Date(),
-          });
+          }, true);
 
           const statsSaved = await firebaseService.saveUserStats(user.id, {
             currentStreak: 0,
@@ -139,13 +134,10 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
 
       const result = await Promise.race([firestorePromise, timeoutPromise]);
 
-      if (result) {
-        console.log('✅ Firestore sync successful:', result);
-      } else {
-        console.warn('⚠️  Firestore sync skipped (timeout or error). Continuing with local storage only.');
+      if (!result) {
+        console.warn('⚠️  Firestore sync skipped');
       }
 
-      console.log('💾 Updating local store (CRITICAL - must succeed)...');
       await updateProfile({
         age: userProfile.age,
         weight: userProfile.weight,
@@ -177,23 +169,9 @@ export const CompletionScreen: React.FC<Props> = ({ route, navigation }) => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      console.log('✅ Local profile updated');
 
-      console.log('🎯 Updating nutrition goals...');
       updateNutritionGoals(nutritionGoals);
-      console.log('✅ Nutrition goals updated');
-
-      console.log('✅ Completing onboarding (CRITICAL)...');
       await completeOnboarding();
-
-      const updatedUser = useUserStore.getState().user;
-      console.log('🔍 After completeOnboarding - user:', updatedUser?.email);
-      console.log('🔍 After completeOnboarding - onboardingCompleted:', updatedUser?.onboardingCompleted);
-      console.log('🔍 After completeOnboarding - isOnboardingCompleted from store:', useUserStore.getState().isOnboardingCompleted);
-
-      console.log('🎉 Onboarding completed successfully!');
-      console.log('🔄 Navigation should auto-trigger to dashboard');
-
       setIsLoading(false);
 
     } catch (error) {

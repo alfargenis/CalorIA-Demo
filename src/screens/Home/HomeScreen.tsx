@@ -10,27 +10,45 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../../types';
 
+import { MaterialIcons } from '@expo/vector-icons';
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
 import { Heading2, Heading3, BodyText, Caption } from '../../components/UI/Typography';
 import { CalorieProgressChart, WeeklyCaloriesChart, MacroDistributionChart } from '../../components/UI/CaloriaChart';
+import { WaterIntakeWidget } from '../../components/UI/WaterIntakeWidget';
+import { StreakCard } from '../../components/UI/StreakCard';
+import { DashboardSkeleton } from '../../components/UI/LoadingSkeleton';
 import { useFoodStore } from '../../store/foodStore';
 import { useUserStore } from '../../store/userStore';
+import { useTheme } from '../../contexts/ThemeContext';
 import { COLORS, SPACING } from '../../utils/constants';
+import { selectionFeedback } from '../../utils/haptics';
+
+type HomeScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
 
 export const HomeScreen = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useUserStore();
-  const { 
-    todayStats, 
-    calculateDailyNutrition, 
+  const { colors } = useTheme();
+  const {
+    todayStats,
+    calculateDailyNutrition,
     getTodayEntries,
+    waterIntake,
+    addWaterIntake,
     isLoading,
-    addFoodEntry 
+    addFoodEntry
   } = useFoodStore();
-  
+
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
 
   useEffect(() => {
@@ -131,25 +149,48 @@ export const HomeScreen = () => {
   };
 
   const getNutritionColor = (percentage: number) => {
-    if (percentage < 90) return COLORS.error;
-    if (percentage > 110) return COLORS.secondary;
-    return COLORS.success;
+    if (percentage < 90) return colors.error;
+    if (percentage > 110) return colors.secondary;
+    return colors.success;
   };
 
+  // Show skeleton on initial load
+  if (isLoading && !todayStats && todayEntries.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'ios' ? 60 : StatusBar.currentHeight || 0 + 20 }]}
+        >
+          <DashboardSkeleton
+            showWaterWidget={true}
+            showStreakCard={!!user?.stats}
+          />
+        </ScrollView>
+        <SafeAreaView edges={['bottom']} style={{ backgroundColor: colors.background }} />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'ios' ? 60 : StatusBar.currentHeight || 0 + 20 }]}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
       >
         {/* Welcome Header */}
         <View style={styles.header}>
-          <Heading2>
-            ¡Hola, {user?.displayName || 'Usuario'}! 👋
-          </Heading2>
+          <View style={styles.headerRow}>
+            <Heading2>
+              ¡Hola, {user?.displayName || 'Usuario'}!
+            </Heading2>
+            <MaterialIcons name="waving-hand" size={28} color={colors.primary} />
+          </View>
           <Caption color="textSecondary">
             {new Date().toLocaleDateString('es-ES', {
               weekday: 'long',
@@ -168,7 +209,10 @@ export const HomeScreen = () => {
                 styles.viewModeButton,
                 viewMode === 'daily' && styles.viewModeButtonActive
               ]}
-              onPress={() => setViewMode('daily')}
+              onPress={() => {
+                selectionFeedback();
+                setViewMode('daily');
+              }}
             >
               <BodyText style={[
                 styles.viewModeText,
@@ -182,7 +226,10 @@ export const HomeScreen = () => {
                 styles.viewModeButton,
                 viewMode === 'weekly' && styles.viewModeButtonActive
               ]}
-              onPress={() => setViewMode('weekly')}
+              onPress={() => {
+                selectionFeedback();
+                setViewMode('weekly');
+              }}
             >
               <BodyText style={[
                 styles.viewModeText,
@@ -201,19 +248,37 @@ export const HomeScreen = () => {
           </Heading3>
           <View style={styles.actionButtons}>
             <Button
-              title="📸 Escanear Comida"
-              onPress={() => {}}
+              title="Escanear Comida"
+              onPress={() => navigation.navigate('Camera')}
               variant="primary"
               style={styles.actionButton}
+              icon={<MaterialIcons name="photo-camera" size={20} color={COLORS.surface} />}
             />
             <Button
-              title="➕ Agregar Manual"
-              onPress={() => {}}
+              title="Ver Historial"
+              onPress={() => navigation.navigate('History')}
               variant="outline"
               style={styles.actionButton}
+              icon={<MaterialIcons name="history" size={20} color={COLORS.primary} />}
             />
           </View>
         </Card>
+
+        {/* Streak Card */}
+        {user?.stats && (
+          <StreakCard
+            currentStreak={user.stats.currentStreak}
+            longestStreak={user.stats.longestStreak}
+            lastActivityDate={user.stats.lastActivityDate}
+          />
+        )}
+
+        {/* Water Intake Tracker */}
+        <WaterIntakeWidget
+          currentIntake={waterIntake}
+          goalIntake={2000}
+          onAddWater={addWaterIntake}
+        />
 
         {/* Charts Section */}
         {viewMode === 'daily' && hasEntries && todayStats ? (
@@ -304,7 +369,7 @@ export const HomeScreen = () => {
           /* Empty State */
           <Card style={styles.emptyState}>
             <View style={styles.emptyContent}>
-              <BodyText style={styles.emptyEmoji}>🍽️</BodyText>
+              <MaterialIcons name="restaurant" size={64} color={COLORS.textSecondary} style={styles.emptyIcon} />
               <Heading3 align="center" style={styles.emptyTitle}>
                 ¡Registra tu primera comida!
               </Heading3>
@@ -313,7 +378,7 @@ export const HomeScreen = () => {
               </BodyText>
               <Button
                 title="Comenzar Ahora"
-                onPress={() => {}}
+                onPress={() => navigation.navigate('Camera')}
                 style={styles.emptyButton}
               />
             </View>
@@ -327,7 +392,7 @@ export const HomeScreen = () => {
               <Heading3>Comidas Recientes</Heading3>
               <Button
                 title="Ver Todo"
-                onPress={() => {}}
+                onPress={() => navigation.navigate('History')}
                 variant="ghost"
                 size="small"
               />
@@ -350,26 +415,31 @@ export const HomeScreen = () => {
           </Card>
         )}
       </ScrollView>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']} style={{ backgroundColor: colors.background }} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: SPACING.md,
+    padding: SPACING.sm,
   },
   header: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   viewModeCard: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     padding: SPACING.xs,
   },
   viewModeContainer: {
@@ -398,10 +468,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   quickActions: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   sectionTitle: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -411,10 +481,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressCard: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   progressItem: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   progressHeader: {
     flexDirection: 'row',
@@ -453,14 +523,13 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   emptyState: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   emptyContent: {
     alignItems: 'center',
     paddingVertical: SPACING.lg,
   },
-  emptyEmoji: {
-    fontSize: 48,
+  emptyIcon: {
     marginBottom: SPACING.md,
   },
   emptyTitle: {
@@ -474,13 +543,13 @@ const styles = StyleSheet.create({
     minWidth: 150,
   },
   recentMeals: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   mealItem: {
     flexDirection: 'row',

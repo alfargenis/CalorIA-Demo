@@ -5,12 +5,13 @@
  */
 
 import { create } from 'zustand';
-import type { 
-  FoodEntry, 
-  DailyStats, 
-  NutritionGoals, 
+import { firebaseService } from '../services/FirebaseService';
+import type {
+  FoodEntry,
+  DailyStats,
+  NutritionGoals,
   MealType,
-  FoodRecognitionResult 
+  FoodRecognitionResult
 } from '../types';
 import { DEFAULT_NUTRITION_GOALS } from '../utils/constants';
 
@@ -19,6 +20,7 @@ interface FoodState {
   todayStats: DailyStats | null;
   foodEntries: FoodEntry[];
   nutritionGoals: NutritionGoals;
+  waterIntake: number; // ml
   isLoading: boolean;
   error: string | null;
   lastRecognitionResult: FoodRecognitionResult | null;
@@ -27,13 +29,16 @@ interface FoodState {
   addFoodEntry: (entry: Omit<FoodEntry, 'id'>) => void;
   updateFoodEntry: (id: string, updates: Partial<FoodEntry>) => void;
   deleteFoodEntry: (id: string) => void;
+  addWaterIntake: (amount: number) => void;
+  resetWaterIntake: () => void;
   setTodayStats: (stats: DailyStats) => void;
   updateNutritionGoals: (goals: Partial<NutritionGoals>) => void;
   setRecognitionResult: (result: FoodRecognitionResult | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
-  
+  loadFoodEntries: (userId: string) => Promise<void>;
+
   // Helper functions
   getTodayEntries: () => FoodEntry[];
   getEntriesByMeal: (mealType: MealType) => FoodEntry[];
@@ -45,6 +50,7 @@ export const useFoodStore = create<FoodState>()((set, get) => ({
       todayStats: null,
       foodEntries: [],
       nutritionGoals: DEFAULT_NUTRITION_GOALS,
+      waterIntake: 0,
       isLoading: false,
       error: null,
       lastRecognitionResult: null,
@@ -82,6 +88,16 @@ export const useFoodStore = create<FoodState>()((set, get) => ({
         get().calculateDailyNutrition();
       },
 
+      addWaterIntake: (amount) => {
+        set((state) => ({
+          waterIntake: state.waterIntake + amount,
+        }));
+      },
+
+      resetWaterIntake: () => {
+        set({ waterIntake: 0 });
+      },
+
       setTodayStats: (todayStats) => {
         set({ todayStats });
       },
@@ -113,6 +129,23 @@ export const useFoodStore = create<FoodState>()((set, get) => ({
         set({ error: null });
       },
 
+      loadFoodEntries: async (userId: string) => {
+        try {
+          set({ isLoading: true });
+          const entries = await firebaseService.getFoodEntries(userId);
+
+          if (entries && entries.length > 0) {
+            set({ foodEntries: entries, isLoading: false });
+            get().calculateDailyNutrition();
+          } else {
+            set({ isLoading: false });
+          }
+        } catch (error) {
+          console.error('❌ Error loading food entries:', error);
+          set({ isLoading: false, error: 'Error cargando historial de comidas' });
+        }
+      },
+
       // Helper functions
       getTodayEntries: () => {
         const today = new Date();
@@ -140,23 +173,26 @@ export const useFoodStore = create<FoodState>()((set, get) => ({
 
         // Calculate total nutrition for today
         const totalNutrition = todayEntries.reduce(
-          (total, entry) => ({
-            calories: total.calories + entry.nutrition.calories,
-            protein: total.protein + entry.nutrition.protein,
-            carbs: total.carbs + entry.nutrition.carbs,
-            fat: total.fat + entry.nutrition.fat,
-            fiber: total.fiber + entry.nutrition.fiber,
-            sugar: total.sugar + entry.nutrition.sugar,
-            sodium: total.sodium + entry.nutrition.sodium,
-            cholesterol: total.cholesterol + entry.nutrition.cholesterol,
-            saturatedFat: total.saturatedFat + entry.nutrition.saturatedFat,
-            transFat: total.transFat + entry.nutrition.transFat,
-            potassium: total.potassium + entry.nutrition.potassium,
-            calcium: total.calcium + entry.nutrition.calcium,
-            iron: total.iron + entry.nutrition.iron,
-            vitaminA: total.vitaminA + entry.nutrition.vitaminA,
-            vitaminC: total.vitaminC + entry.nutrition.vitaminC,
-          }),
+          (total, entry) => {
+            const quantity = entry.quantity || 1;
+            return {
+              calories: total.calories + (entry.nutrition.calories * quantity),
+              protein: total.protein + (entry.nutrition.protein * quantity),
+              carbs: total.carbs + (entry.nutrition.carbs * quantity),
+              fat: total.fat + (entry.nutrition.fat * quantity),
+              fiber: total.fiber + (entry.nutrition.fiber * quantity),
+              sugar: total.sugar + (entry.nutrition.sugar * quantity),
+              sodium: total.sodium + (entry.nutrition.sodium * quantity),
+              cholesterol: total.cholesterol + (entry.nutrition.cholesterol * quantity),
+              saturatedFat: total.saturatedFat + (entry.nutrition.saturatedFat * quantity),
+              transFat: total.transFat + (entry.nutrition.transFat * quantity),
+              potassium: total.potassium + (entry.nutrition.potassium * quantity),
+              calcium: total.calcium + (entry.nutrition.calcium * quantity),
+              iron: total.iron + (entry.nutrition.iron * quantity),
+              vitaminA: total.vitaminA + (entry.nutrition.vitaminA * quantity),
+              vitaminC: total.vitaminC + (entry.nutrition.vitaminC * quantity),
+            };
+          },
           {
             calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0,
             sodium: 0, cholesterol: 0, saturatedFat: 0, transFat: 0,

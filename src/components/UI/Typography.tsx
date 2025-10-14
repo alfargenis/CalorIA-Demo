@@ -1,6 +1,6 @@
 /**
  * CalorIA - Typography Components
- * Consistent text styling throughout the app
+ * Consistent text styling throughout the app with dark mode support
  */
 
 import React from 'react';
@@ -9,12 +9,13 @@ import {
   StyleSheet,
   TextStyle,
 } from 'react-native';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '../../utils/constants';
+import { FONT_SIZES, FONT_WEIGHTS } from '../../utils/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface TypographyProps {
   children: React.ReactNode;
   style?: TextStyle;
-  color?: keyof typeof COLORS;
+  color?: 'text' | 'textSecondary' | 'primary' | 'secondary' | 'success' | 'error';
   align?: 'left' | 'center' | 'right';
   numberOfLines?: number;
 }
@@ -25,18 +26,21 @@ export const Heading1: React.FC<TypographyProps> = ({
   color = 'text',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.h1,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.h1,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 export const Heading2: React.FC<TypographyProps> = ({
   children,
@@ -44,18 +48,21 @@ export const Heading2: React.FC<TypographyProps> = ({
   color = 'text',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.h2,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.h2,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 export const Heading3: React.FC<TypographyProps> = ({
   children,
@@ -63,18 +70,21 @@ export const Heading3: React.FC<TypographyProps> = ({
   color = 'text',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.h3,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.h3,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 export const BodyText: React.FC<TypographyProps> = ({
   children,
@@ -82,18 +92,21 @@ export const BodyText: React.FC<TypographyProps> = ({
   color = 'text',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.body,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.body,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 export const Caption: React.FC<TypographyProps> = ({
   children,
@@ -101,18 +114,21 @@ export const Caption: React.FC<TypographyProps> = ({
   color = 'textSecondary',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.caption,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.caption,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 export const Label: React.FC<TypographyProps> = ({
   children,
@@ -120,18 +136,21 @@ export const Label: React.FC<TypographyProps> = ({
   color = 'text',
   align = 'left',
   numberOfLines,
-}) => (
-  <Text
-    style={[
-      styles.label,
-      { color: COLORS[color], textAlign: align },
-      style,
-    ]}
-    numberOfLines={numberOfLines}
-  >
-    {children}
-  </Text>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={[
+        styles.label,
+        { color: colors[color], textAlign: align },
+        style,
+      ]}
+      numberOfLines={numberOfLines}
+    >
+      {children}
+    </Text>
+  );
+};
 
 const styles = StyleSheet.create({
   h1: {

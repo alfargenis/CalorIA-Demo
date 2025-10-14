@@ -142,9 +142,9 @@ export interface FoodEntry {
   notes?: string;
 }
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'supplement';
 
-export type FoodCategory = 
+export type FoodCategory =
   | 'fruits'
   | 'vegetables'
   | 'grains'
@@ -154,7 +154,80 @@ export type FoodCategory =
   | 'beverages'
   | 'snacks'
   | 'prepared'
+  | 'supplement'
   | 'unknown';
+
+// Supplement Types
+export interface SupplementEntry extends Omit<FoodEntry, 'mealType'> {
+  mealType: 'supplement';
+  supplement: SupplementInfo;
+}
+
+export interface SupplementInfo {
+  type: SupplementType;
+  brand: string;
+  dosage: SupplementDosage;
+  frequency: SupplementFrequency;
+  timing: SupplementTiming;
+  warnings?: SupplementWarning[];
+  cycleInfo?: CycleInfo;
+}
+
+export type SupplementType =
+  | 'protein_powder'      // Proteína en polvo
+  | 'creatine'            // Creatina
+  | 'pre_workout'         // Pre-entreno
+  | 'post_workout'        // Post-entreno
+  | 'bcaa'                // Aminoácidos ramificados
+  | 'vitamins'            // Vitaminas
+  | 'minerals'            // Minerales
+  | 'omega3'              // Omega 3
+  | 'testosterone'        // Testosterona (⚠️)
+  | 'anabolic_steroid'    // Esteroides anabólicos (⚠️⚠️)
+  | 'sarm'                // SARMs (⚠️⚠️)
+  | 'growth_hormone'      // Hormona de crecimiento (⚠️⚠️)
+  | 'other';
+
+export interface SupplementDosage {
+  amount: number;
+  unit: 'g' | 'mg' | 'mcg' | 'ml' | 'iu' | 'scoop' | 'capsule' | 'tablet';
+  perServing: boolean;
+}
+
+export type SupplementFrequency =
+  | 'once_daily'
+  | 'twice_daily'
+  | 'three_times_daily'
+  | 'before_workout'
+  | 'after_workout'
+  | 'as_needed'
+  | 'cycling';
+
+export type SupplementTiming =
+  | 'morning'
+  | 'afternoon'
+  | 'evening'
+  | 'before_bed'
+  | 'pre_workout'
+  | 'post_workout'
+  | 'with_meal'
+  | 'empty_stomach';
+
+export interface SupplementWarning {
+  level: 'info' | 'caution' | 'danger' | 'critical';
+  message: string;
+  recommendation: string;
+  learnMoreUrl?: string;
+}
+
+export interface CycleInfo {
+  isOnCycle: boolean;
+  cycleStartDate: Date;
+  cycleEndDate?: Date;
+  cycleDuration: number; // weeks
+  offCycleDuration?: number; // weeks
+  pct?: boolean; // Post Cycle Therapy
+}
 
 // AI Recognition Types
 export interface FoodRecognitionResult {
@@ -261,6 +334,14 @@ export type CameraStackParamList = {
   CameraView: undefined;
   FoodRecognition: { imageUri: string };
   ConfirmFood: { recognitionResult: FoodRecognitionResult };
+};
+
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditGoals: undefined;
+  Notifications: undefined;
+  Subscription: undefined;
+  Support: undefined;
 };
 
 // API Response Types

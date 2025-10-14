@@ -13,6 +13,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { lightImpact } from '../../utils/haptics';
 
 interface ButtonProps {
   title: string;
@@ -56,10 +57,15 @@ export const Button: React.FC<ButtonProps> = ({
     textStyle,
   ];
 
+  const handlePress = () => {
+    lightImpact();
+    onPress();
+  };
+
   return (
     <TouchableOpacity
       style={buttonStyles}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={0.8}
     >
@@ -83,6 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: SPACING.xs,
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: 'transparent',

@@ -11,8 +11,11 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
@@ -41,6 +44,7 @@ export const HistoryScreen = () => {
     { value: 'lunch', label: 'Almuerzo' },
     { value: 'dinner', label: 'Cena' },
     { value: 'snack', label: 'Snack' },
+    { value: 'supplement', label: 'Suplementos' },
   ];
 
   // Get entries based on view mode and filters
@@ -104,12 +108,14 @@ export const HistoryScreen = () => {
   };
 
   const getMealTypeIcon = (mealType: MealType) => {
+    const iconProps = { size: 20 };
     switch (mealType) {
-      case 'breakfast': return '🌅';
-      case 'lunch': return '☀️';
-      case 'dinner': return '🌙';
-      case 'snack': return '🍪';
-      default: return '🍽️';
+      case 'breakfast': return <MaterialIcons name="wb-sunny" color="#FFA500" {...iconProps} />;
+      case 'lunch': return <MaterialIcons name="restaurant" color="#4CAF50" {...iconProps} />;
+      case 'dinner': return <MaterialIcons name="nights-stay" color="#9C27B0" {...iconProps} />;
+      case 'snack': return <MaterialIcons name="cookie" color="#FF6B35" {...iconProps} />;
+      case 'supplement': return <MaterialIcons name="medication" color="#2196F3" {...iconProps} />;
+      default: return <MaterialIcons name="restaurant-menu" color={COLORS.textSecondary} {...iconProps} />;
     }
   };
 
@@ -119,6 +125,7 @@ export const HistoryScreen = () => {
       case 'lunch': return 'Almuerzo';
       case 'dinner': return 'Cena';
       case 'snack': return 'Snack';
+      case 'supplement': return 'Suplemento';
       default: return 'Comida';
     }
   };
@@ -128,9 +135,9 @@ export const HistoryScreen = () => {
       <View style={styles.entryHeader}>
         <View style={styles.entryInfo}>
           <View style={styles.entryTitleRow}>
-            <BodyText style={styles.entryIcon}>
+            <View style={styles.entryIconContainer}>
               {getMealTypeIcon(item.mealType)}
-            </BodyText>
+            </View>
             <BodyText style={styles.entryName}>
               {item.food.name}
             </BodyText>
@@ -139,12 +146,12 @@ export const HistoryScreen = () => {
             {getMealTypeLabel(item.mealType)} • {new Date(item.date).toLocaleTimeString('es-ES', {
               hour: '2-digit',
               minute: '2-digit',
-            })} • {item.portion.amount} {item.portion.unit}
+            })} • {item.servingSize?.amount || item.quantity} {item.servingSize?.unit || 'porción'}
           </Caption>
         </View>
         <View style={styles.entryStats}>
           <BodyText style={styles.entryCalories}>
-            {Math.round(item.nutrition.calories)}
+            {Math.round(item.nutrition.calories * (item.quantity || 1))}
           </BodyText>
           <Caption color="textSecondary">cal</Caption>
         </View>
@@ -155,7 +162,7 @@ export const HistoryScreen = () => {
           <View style={styles.macroHeader}>
             <Caption color="textSecondary">Proteína</Caption>
             <BodyText style={styles.macroValue}>
-              {Math.round(item.nutrition.protein)}g
+              {Math.round(item.nutrition.protein * (item.quantity || 1))}g
             </BodyText>
           </View>
         </View>
@@ -163,7 +170,7 @@ export const HistoryScreen = () => {
           <View style={styles.macroHeader}>
             <Caption color="textSecondary">Carbos</Caption>
             <BodyText style={styles.macroValue}>
-              {Math.round(item.nutrition.carbs)}g
+              {Math.round(item.nutrition.carbs * (item.quantity || 1))}g
             </BodyText>
           </View>
         </View>
@@ -171,7 +178,7 @@ export const HistoryScreen = () => {
           <View style={styles.macroHeader}>
             <Caption color="textSecondary">Grasas</Caption>
             <BodyText style={styles.macroValue}>
-              {Math.round(item.nutrition.fat)}g
+              {Math.round(item.nutrition.fat * (item.quantity || 1))}g
             </BodyText>
           </View>
         </View>
@@ -198,8 +205,14 @@ export const HistoryScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.content}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <View style={[styles.content, { paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20 }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Heading2 style={styles.screenTitle}>Historial</Heading2>
+        </View>
+
         {/* View Mode Selector */}
         <Card style={styles.selectorCard}>
           <View style={styles.selectorButtons}>
@@ -331,7 +344,8 @@ export const HistoryScreen = () => {
           )}
         </View>
       </View>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']} style={{ backgroundColor: COLORS.background }} />
+    </View>
   );
 };
 
@@ -343,6 +357,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: SPACING.md,
+  },
+  header: {
+    marginBottom: SPACING.md,
+  },
+  screenTitle: {
+    textAlign: 'left',
   },
   selectorCard: {
     marginBottom: SPACING.md,
@@ -434,9 +454,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 2,
   },
-  entryIcon: {
-    fontSize: 16,
+  entryIconContainer: {
     marginRight: SPACING.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   entryName: {
     fontWeight: '500',
@@ -491,6 +512,7 @@ const styles = StyleSheet.create({
   },
   emptyEmoji: {
     fontSize: 48,
+    lineHeight: 56,
     marginBottom: SPACING.md,
   },
   emptyTitle: {

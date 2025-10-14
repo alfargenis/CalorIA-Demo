@@ -4,12 +4,13 @@
  */
 
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LiquidGlassView, LiquidGlassContainerView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 
 import { useUserStore } from '../store/userStore';
 import { COLORS } from '../utils/constants';
@@ -21,7 +22,7 @@ import { OnboardingStackNavigator } from './OnboardingStackNavigator';
 import { HomeScreen } from '../screens/Home/HomeScreen';
 import { CameraStackNavigator } from './CameraStackNavigator';
 import { HistoryScreen } from '../screens/History/HistoryScreen';
-import { ProfileScreen } from '../screens/Profile/ProfileScreen';
+import { ProfileStackNavigator } from './ProfileStackNavigator';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -55,12 +56,40 @@ const MainTabNavigator = () => {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
-          paddingBottom: 4,
-          paddingTop: 4,
-          height: 60,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+          paddingBottom: Platform.OS === 'ios' ? 8 : 8,
+          paddingTop: 8,
+          height: Platform.OS === 'ios' ? 65 : 65,
+          marginHorizontal: 16,
+          marginBottom: Platform.OS === 'ios' ? 20 : 10,
+          borderRadius: 20,
         },
+        tabBarBackground: () => (
+          <LiquidGlassContainerView
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}
+          >
+            <LiquidGlassView
+              style={{
+                flex: 1,
+                borderRadius: 20,
+                ...(!isLiquidGlassSupported() && {
+                  backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                }),
+              }}
+            />
+          </LiquidGlassContainerView>
+        ),
         headerStyle: {
           backgroundColor: COLORS.surface,
           borderBottomColor: COLORS.border,
@@ -71,34 +100,36 @@ const MainTabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           title: 'Dashboard',
-          headerTitle: 'CalorIA',
+          headerShown: false,
         }}
       />
-      <Tab.Screen 
-        name="Camera" 
+      <Tab.Screen
+        name="Camera"
         component={CameraStackNavigator}
         options={{
           title: 'Escanear',
           headerShown: false,
         }}
       />
-      <Tab.Screen 
-        name="History" 
+      <Tab.Screen
+        name="History"
         component={HistoryScreen}
         options={{
           title: 'Historial',
+          headerShown: false,
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStackNavigator}
         options={{
           title: 'Perfil',
+          headerShown: false,
         }}
       />
     </Tab.Navigator>

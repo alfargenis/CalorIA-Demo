@@ -10,7 +10,8 @@ import {
   ViewStyle,
   Platform,
 } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { SPACING, BORDER_RADIUS } from '../../utils/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface CardProps {
   children: React.ReactNode;
@@ -23,15 +24,19 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({
   children,
   style,
-  padding = 'md',
+  padding = 'sm',
   shadow = true,
-  borderRadius = 'lg',
+  borderRadius = 'md',
 }) => {
+  const { colors } = useTheme();
+
   const cardStyles = [
     styles.base,
     {
       padding: SPACING[padding],
       borderRadius: BORDER_RADIUS[borderRadius],
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
     },
     shadow && styles.shadow,
     style,
@@ -42,14 +47,12 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   shadow: {
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.text,
+        shadowColor: '#000',
         shadowOffset: {
           width: 0,
           height: 2,

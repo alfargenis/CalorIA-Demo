@@ -18,7 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Card, TextInput, Heading1, Heading2, BodyText } from '../../components/UI';
 import { useUserStore } from '../../store/userStore';
+import { useFoodStore } from '../../store/foodStore';
 import { AuthServiceUnified as AuthService } from '../../services/AuthServiceUnified';
+import { firebaseService } from '../../services/FirebaseService';
 import { COLORS, SPACING } from '../../utils/constants';
 
 export const LoginScreen = () => {
@@ -26,7 +28,8 @@ export const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const { setUser, setLoading, setError, isLoading } = useUserStore();
+  const { setUser, setLoading, setError, isLoading, updateUser } = useUserStore();
+  const { loadFoodEntries } = useFoodStore();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -41,8 +44,24 @@ export const LoginScreen = () => {
       const result = await AuthService.signInWithEmail(email, password);
 
       if (result.success && result.user) {
-        setUser(result.user);
+        await setUser(result.user);
         console.log('✅ Login successful for:', result.user.email);
+
+        try {
+          const firestoreData = await firebaseService.getUserData(result.user.id);
+
+          if (firestoreData.profile || firestoreData.onboardingCompleted) {
+            await updateUser({
+              onboardingCompleted: firestoreData.onboardingCompleted,
+              profile: firestoreData.profile || result.user.profile,
+              stats: firestoreData.stats || result.user.stats,
+            });
+
+            loadFoodEntries(result.user.id);
+          }
+        } catch (syncError) {
+          console.warn('⚠️  Firestore sync failed after login');
+        }
       } else {
         Alert.alert('Error de Login', result.error || 'Error al iniciar sesión');
       }

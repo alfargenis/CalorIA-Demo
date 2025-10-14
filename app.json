@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.CalorIA",
+      "deploymentTarget": "18.0",
       "infoPlist": {
         "NSCameraUsageDescription": "CalorIA necesita acceso a la cámara para tomar fotos de alimentos y calcular calorías automáticamente.",
         "NSPhotoLibraryUsageDescription": "CalorIA necesita acceso a la galería para seleccionar fotos de alimentos existentes."

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { Card } from '../../components/UI/Card';
 import { Button } from '../../components/UI/Button';
@@ -116,7 +117,7 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
         setCapturedPhoto(imageUri);
-        
+
         // Navigate directly to processing
         navigation.navigate('Processing', { imageUri });
       }
@@ -124,6 +125,13 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'No se pudo seleccionar la imagen');
     }
+  };
+
+  const handleManualEntry = () => {
+    Alert.alert(
+      'Entrada Manual',
+      'La entrada manual de comidas estará disponible pronto. Esta función te permitirá buscar alimentos en nuestra base de datos o crear entradas personalizadas.'
+    );
   };
 
   // Function is no longer needed - navigation handles the flow
@@ -191,8 +199,8 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           ) : (
             <View style={styles.cameraPlaceholder}>
-              <BodyText style={styles.cameraEmoji}>📷</BodyText>
-              <Heading2 align="center" style={styles.cameraTitle}>
+              <MaterialIcons name="photo-camera" size={64} color={COLORS.textSecondary} />
+              <Heading2 style={styles.cameraTitle}>
                 Escanear Comida
               </Heading2>
               <BodyText align="center" color="textSecondary" style={styles.cameraDescription}>
@@ -205,20 +213,32 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
         {/* Action Buttons */}
         <View style={styles.actions}>
           <Button
-            title="📸 Tomar Foto"
+            title="Tomar Foto"
             onPress={handleTakePhoto}
             size="large"
             fullWidth
             style={styles.actionButton}
+            icon={<MaterialIcons name="photo-camera" size={24} color={COLORS.surface} />}
           />
-          
+
           <Button
-            title="🖼️ Desde Galería"
+            title="Desde Galería"
             onPress={handlePickFromGallery}
             variant="outline"
             size="large"
             fullWidth
             style={styles.actionButton}
+            icon={<MaterialIcons name="photo-library" size={24} color={COLORS.primary} />}
+          />
+
+          <Button
+            title="Entrada Manual"
+            onPress={handleManualEntry}
+            variant="outline"
+            size="large"
+            fullWidth
+            style={styles.actionButton}
+            icon={<MaterialIcons name="edit" size={24} color={COLORS.primary} />}
           />
         </View>
 
@@ -257,21 +277,23 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
   cameraCard: {
-    flex: 1,
-    marginBottom: SPACING.lg,
+    height: 240,
+    marginBottom: SPACING.md,
   },
   cameraPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
   },
   cameraEmoji: {
     fontSize: 64,
     marginBottom: SPACING.lg,
   },
   cameraTitle: {
-    marginBottom: SPACING.md,
+    marginBottom: 0,
+    textAlign: 'center',
   },
   cameraDescription: {
     textAlign: 'center',
